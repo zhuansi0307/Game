@@ -1,0 +1,1078 @@
+{
+  "scenes": [
+    {
+      "id": "kitchen",
+      "title": "厨房",
+      "background": "bg/厨房中午.png",
+      "time_variants": {
+        "morning": "第一天所有素材/厨房.png",
+        "noon": "bg/厨房中午.png",
+        "afternoon": "bg/厨房下午.png",
+        "evening": "bg/厨房晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_living_right",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回客厅右",
+          "desc": "回到客厅右。",
+          "target_scene": "living_right_area",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "restaurant",
+      "title": "餐厅",
+      "background": "bg/餐厅中午.png",
+      "time_variants": {
+        "morning": "bg/餐厅早晨.png",
+        "noon": "bg/餐厅中午.png",
+        "afternoon": "bg/餐厅下午.png",
+        "evening": "bg/餐厅晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_living_right",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回客厅右",
+          "desc": "回到客厅右。",
+          "target_scene": "living_right_area",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "garage",
+      "title": "车库",
+      "background": "bg/车库中午.png",
+      "time_variants": {
+        "morning": "bg/车库早晨.png",
+        "noon": "bg/车库中午.png",
+        "afternoon": "bg/车库下午.png",
+        "evening": "bg/车库晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_entrance",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回别墅门口",
+          "desc": "回到别墅门口。",
+          "target_scene": "villa_entrance",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "villa_entrance",
+      "title": "别墅门口",
+      "background": "bg/别墅门口中午.png",
+      "time_variants": {
+        "morning": "bg/别墅门口早晨.png",
+        "noon": "bg/别墅门口中午.png",
+        "afternoon": "bg/别墅门口下午.png",
+        "evening": "bg/别墅门口晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "to_living_room",
+          "rect": [
+            590,
+            765,
+            100,
+            100
+          ],
+          "dot": [
+            640,
+            815
+          ],
+          "title": "进入大客厅",
+          "desc": "推开客厅的门。",
+          "target_scene": "living_room",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_garage",
+          "rect": [
+            1680,
+            530,
+            100,
+            100
+          ],
+          "dot": [
+            1730,
+            580
+          ],
+          "title": "车库",
+          "desc": "通往车库。",
+          "target_scene": "garage",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_garage_bottom",
+          "rect": [
+            1529,
+            712,
+            100,
+            100
+          ],
+          "dot": [
+            1579,
+            762
+          ],
+          "title": "车库",
+          "desc": "通往车库。",
+          "target_scene": "garage",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "living_right_area",
+      "title": "客厅右",
+      "background": "bg/客厅右中午.png",
+      "time_variants": {
+        "morning": "bg/客厅右早晨.png",
+        "noon": "bg/客厅右中午.png",
+        "afternoon": "bg/客厅右下午.png",
+        "evening": "bg/客厅右晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_entrance",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回客厅",
+          "desc": "回到大客厅。",
+          "target_scene": "living_room",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_restaurant",
+          "rect": [
+            191,
+            370,
+            100,
+            100
+          ],
+          "dot": [
+            241,
+            420
+          ],
+          "title": "餐厅",
+          "desc": "前往餐厅。",
+          "target_scene": "restaurant",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_kitchen",
+          "rect": [
+            1090,
+            415,
+            100,
+            100
+          ],
+          "dot": [
+            1140,
+            465
+          ],
+          "title": "厨房",
+          "desc": "前往厨房。",
+          "target_scene": "kitchen",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "living_room",
+      "title": "大客厅",
+      "background": "bg/大客厅中午.png",
+      "time_variants": {
+        "morning": "第一天所有素材/大客厅.png",
+        "noon": "bg/大客厅中午.png",
+        "afternoon": "bg/大客厅下午.png",
+        "evening": "bg/大客厅晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_entrance",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回门口",
+          "desc": "回到别墅门口。",
+          "target_scene": "villa_entrance",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "living_left",
+          "rect": [
+            50,
+            490,
+            100,
+            100
+          ],
+          "dot": [
+            100,
+            540
+          ],
+          "title": "客厅左",
+          "desc": "前往客厅另一侧。",
+          "target_scene": "living_left_area",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "living_right",
+          "rect": [
+            1720,
+            490,
+            100,
+            100
+          ],
+          "dot": [
+            1820,
+            540
+          ],
+          "title": "客厅右",
+          "desc": "前往另一区域。",
+          "target_scene": "living_right_area",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "apartment",
+      "title": "清晨公寓",
+      "background": "bg/二楼走廊早晨.png",
+      "hotspots": []
+    },
+    {
+      "id": "street",
+      "title": "城市街道",
+      "background": "bg/别墅门口早晨.png",
+      "hotspots": []
+    },
+    {
+      "id": "living_left_area",
+      "title": "客厅左",
+      "background": "bg/客厅左中午.png",
+      "time_variants": {
+        "morning": "bg/客厅左早晨.png",
+        "noon": "bg/客厅左中午.png",
+        "afternoon": "bg/客厅左下午.png",
+        "evening": "bg/客厅左晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_living",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回客厅",
+          "desc": "回到大客厅。",
+          "target_scene": "living_room",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_master_bedroom",
+          "rect": [
+            1414,
+            485,
+            100,
+            100
+          ],
+          "dot": [
+            1464,
+            535
+          ],
+          "title": "主卧区域",
+          "desc": "主卧区域。",
+          "target_scene": "master_bedroom_area",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_second_floor",
+          "rect": [
+            440,
+            395,
+            100,
+            100
+          ],
+          "dot": [
+            490,
+            445
+          ],
+          "title": "二楼",
+          "desc": "通往二楼。",
+          "target_scene": "second_floor_hallway",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_basement",
+          "rect": [
+            742,
+            603,
+            100,
+            100
+          ],
+          "dot": [
+            792,
+            653
+          ],
+          "title": "负一楼",
+          "desc": "通往负一楼。",
+          "target_scene": "basement_left",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "basement_left",
+      "title": "地下室走廊左",
+      "background": "bg/地下室走廊左中午.png",
+      "time_variants": {
+        "morning": "bg/地下室走廊左早晨.png",
+        "noon": "bg/地下室走廊左中午.png",
+        "afternoon": "bg/地下室走廊左下午.png",
+        "evening": "bg/地下室走廊左晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_living_left",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回客厅左",
+          "desc": "回到客厅左。",
+          "target_scene": "living_left_area",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_basement_bar",
+          "rect": [
+            237,
+            625,
+            100,
+            100
+          ],
+          "dot": [
+            287,
+            675
+          ],
+          "title": "吧台",
+          "desc": "通往吧台。",
+          "target_scene": "basement_bar",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_basement_courtyard",
+          "rect": [
+            793,
+            499,
+            100,
+            100
+          ],
+          "dot": [
+            843,
+            549
+          ],
+          "title": "后院",
+          "desc": "通往负一楼后院。",
+          "target_scene": "basement_courtyard",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_basement_cinema",
+          "rect": [
+            1135,
+            507,
+            100,
+            100
+          ],
+          "dot": [
+            1185,
+            557
+          ],
+          "title": "家庭影院",
+          "desc": "通往家庭影院。",
+          "target_scene": "basement_cinema",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_basement_right",
+          "rect": [
+            1809,
+            496,
+            100,
+            100
+          ],
+          "dot": [
+            1859,
+            546
+          ],
+          "title": "地下室走廊右",
+          "desc": "通往地下室走廊右。",
+          "target_scene": "basement_right",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "basement_bar",
+      "title": "吧台",
+      "background": "bg/吧台中午.png",
+      "time_variants": {
+        "morning": "bg/吧台早晨.png",
+        "noon": "bg/吧台中午.png",
+        "afternoon": "bg/吧台下午.png",
+        "evening": "bg/吧台晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_basement_left",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回地下室走廊左",
+          "desc": "回到地下室走廊左。",
+          "target_scene": "basement_left",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "basement_courtyard",
+      "title": "后院",
+      "background": "bg/后院中午.png",
+      "time_variants": {
+        "morning": "bg/后院早晨.png",
+        "noon": "bg/后院中午.png",
+        "afternoon": "bg/后院下午.png",
+        "evening": "bg/后院晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_basement_left",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回地下室走廊左",
+          "desc": "回到地下室走廊左。",
+          "target_scene": "basement_left",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "basement_cinema",
+      "title": "家庭影院",
+      "background": "bg/家庭影院中午.png",
+      "time_variants": {
+        "morning": "bg/家庭影院早晨.png",
+        "noon": "bg/家庭影院中午.png",
+        "afternoon": "bg/家庭影院下午.png",
+        "evening": "bg/家庭影院晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_basement_left",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回地下室走廊左",
+          "desc": "回到地下室走廊左。",
+          "target_scene": "basement_left",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "basement_right",
+      "title": "地下室走廊右",
+      "background": "bg/地下室走廊右中午.png",
+      "time_variants": {
+        "morning": "bg/地下室走廊右早晨.png",
+        "noon": "bg/地下室走廊右中午.png",
+        "afternoon": "bg/地下室走廊右下午.png",
+        "evening": "bg/地下室走廊右晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_basement_left",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回地下室走廊左",
+          "desc": "回到地下室走廊左。",
+          "target_scene": "basement_left",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_gym",
+          "rect": [
+            1028,
+            453,
+            100,
+            100
+          ],
+          "dot": [
+            1078,
+            503
+          ],
+          "title": "健身房",
+          "desc": "通往健身房。",
+          "target_scene": "gym",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "gym",
+      "title": "健身房",
+      "background": "bg/健身房中午.png",
+      "time_variants": {
+        "morning": "bg/健身房早晨.png",
+        "noon": "bg/健身房中午.png",
+        "afternoon": "第一天所有素材/健身房下午带刘昕写真）.png.png",
+        "evening": "bg/健身房晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_basement_right",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回地下室走廊右",
+          "desc": "回到地下室走廊右。",
+          "target_scene": "basement_right",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "liuxin_photo",
+          "rect": [
+            1280,
+            420,
+            180,
+            160
+          ],
+          "dot": [
+            1370,
+            500
+          ],
+          "title": "点击照片",
+          "desc": "取得刘昕写真1，点击左键跳过，返回普通的后院下午场景（没有刘昕写真的健身房下午）",
+          "target_scene": null,
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": true,
+          "render_type": "exclamation",
+          "one_time": true
+        }
+      ]
+    },
+    {
+      "id": "gaoshou_room",
+      "title": "高守房间",
+      "background": "第一天所有素材/高守房间.png",
+      "time_variants": {
+        "morning": "第一天所有素材/高守房间.png",
+        "noon": "bg/高守房间中午.png",
+        "afternoon": "bg/高守房间下午.png",
+        "evening": "bg/高守房间晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_hallway",
+          "rect": [
+            545,
+            429,
+            100,
+            100
+          ],
+          "dot": [
+            595,
+            479
+          ],
+          "title": "出门",
+          "desc": "回到二楼走廊。",
+          "target_scene": "second_floor_hallway",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "luggage",
+          "rect": [
+            1228,
+            675,
+            160,
+            130
+          ],
+          "dot": [
+            1320,
+            739
+          ],
+          "title": "点击行李箱",
+          "desc": "弹出选项框：A.开始整理（结束自由探索）\nB.再逛逛",
+          "target_scene": null,
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": true,
+          "render_type": "exclamation",
+          "one_time": false
+        }
+      ]
+    },
+    {
+      "id": "master_bedroom_bathroom",
+      "title": "主卧卫生间",
+      "background": "bg/主卧卫生间中午.png",
+      "time_variants": {
+        "morning": "bg/主卧卫生间早晨.png",
+        "noon": "bg/主卧卫生间中午.png",
+        "afternoon": "bg/主卧卫生间下午.png",
+        "evening": "bg/主卧卫生间晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_master_bedroom_area",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回主卧区域",
+          "desc": "回到主卧区域。",
+          "target_scene": "master_bedroom_area",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "study_room",
+      "title": "书房",
+      "background": "bg/书房中午.png",
+      "time_variants": {
+        "morning": "bg/书房早晨.png",
+        "noon": "bg/书房中午.png",
+        "afternoon": "bg/书房下午.png",
+        "evening": "bg/书房晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_master_bedroom_area",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回主卧区域",
+          "desc": "回到主卧区域。",
+          "target_scene": "master_bedroom_area",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "master_bedroom",
+      "title": "主卧室",
+      "background": "bg/主卧室中午.png",
+      "time_variants": {
+        "morning": "bg/主卧室早晨.png",
+        "noon": "bg/主卧室中午.png",
+        "afternoon": "bg/主卧室下午.png",
+        "evening": "bg/主卧室晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_master_bedroom_area",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回主卧区域",
+          "desc": "回到主卧区域。",
+          "target_scene": "master_bedroom_area",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "master_bedroom_area",
+      "title": "主卧区域",
+      "background": "bg/主卧区域中午.png",
+      "time_variants": {
+        "morning": "bg/主卧区域早晨.png",
+        "noon": "bg/主卧区域中午.png",
+        "afternoon": "bg/主卧区域下午.png",
+        "evening": "bg/主卧区域晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_living_left",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回客厅左",
+          "desc": "回到客厅左。",
+          "target_scene": "living_left_area",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_study_room",
+          "rect": [
+            614,
+            509,
+            100,
+            100
+          ],
+          "dot": [
+            664,
+            559
+          ],
+          "title": "书房",
+          "desc": "书房尚未解锁。",
+          "target_scene": null,
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_master_bedroom",
+          "rect": [
+            1275,
+            515,
+            100,
+            100
+          ],
+          "dot": [
+            1325,
+            565
+          ],
+          "title": "主卧室",
+          "desc": "通往主卧室。",
+          "target_scene": "master_bedroom",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_master_bedroom_bathroom",
+          "rect": [
+            963,
+            469,
+            100,
+            100
+          ],
+          "dot": [
+            1013,
+            519
+          ],
+          "title": "主卧卫生间",
+          "desc": "通往主卧卫生间。",
+          "target_scene": "master_bedroom_bathroom",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "liuxin_room",
+      "title": "刘昕房间",
+      "background": "bg/刘昕房间中午.png",
+      "time_variants": {
+        "morning": "bg/刘昕房间早晨.png",
+        "noon": "bg/刘昕房间中午.png",
+        "afternoon": "bg/刘昕房间下午.png",
+        "evening": "bg/刘昕房间晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_hallway",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回二楼走廊",
+          "desc": "回到二楼走廊。",
+          "target_scene": "second_floor_hallway",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "second_floor_hallway",
+      "title": "二楼走廊",
+      "background": "bg/二楼走廊早晨.png",
+      "time_variants": {
+        "morning": "bg/二楼走廊早晨.png",
+        "noon": "bg/二楼走廊中午.png",
+        "afternoon": "bg/二楼走廊下午.png",
+        "evening": "bg/二楼走廊晚上.png"
+      },
+      "hotspots": [
+        {
+          "id": "back_to_living_left",
+          "rect": [
+            910,
+            976,
+            100,
+            100
+          ],
+          "dot": [
+            960,
+            1026
+          ],
+          "title": "返回客厅左",
+          "desc": "回到客厅左。",
+          "target_scene": "living_left_area",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_gaoshou_room",
+          "rect": [
+            160,
+            633,
+            100,
+            100
+          ],
+          "dot": [
+            210,
+            683
+          ],
+          "title": "高守房间",
+          "desc": "高守的房间。",
+          "target_scene": "gaoshou_room",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_liuxin_room",
+          "rect": [
+            1680,
+            530,
+            100,
+            100
+          ],
+          "dot": [
+            1730,
+            580
+          ],
+          "title": "刘昕房间",
+          "desc": "刘昕的房间。",
+          "target_scene": "liuxin_room",
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        },
+        {
+          "id": "to_hallway_bathroom",
+          "rect": [
+            617,
+            379,
+            100,
+            100
+          ],
+          "dot": [
+            667,
+            429
+          ],
+          "title": "二楼卫生间",
+          "desc": "二楼的卫生间。",
+          "target_scene": null,
+          "target_dialogue": null,
+          "discovered": false,
+          "hidden": false
+        }
+      ]
+    }
+  ]
+}

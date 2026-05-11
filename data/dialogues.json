@@ -1,0 +1,18 @@
+{
+  "inspect_album": [
+    {"speaker": "我", "text": "相册里夹着一张旧照片。"},
+    {"speaker": "我", "text": "照片背面写着一个熟悉的日期。"}
+  ],
+  "inspect_window": [
+    {"speaker": "我", "text": "窗外的城市被清晨的光线慢慢点亮。"},
+    {"speaker": "我", "text": "今天好像会发生什么不一样的事情。"}
+  ],
+  "inspect_cafe": [
+    {"speaker": "我", "text": "咖啡店门口挂着一块手写木牌。"},
+    {"speaker": "我", "text": "上面写着「今日限定：草莓拿铁」。"}
+  ],
+  "inspect_drawer": [
+    {"speaker": "我", "text": "抽屉被轻轻拉开，里面放着一枚旧钥匙。"},
+    {"speaker": "我", "text": "这钥匙上刻着一个奇怪的符号……"}
+  ]
+}

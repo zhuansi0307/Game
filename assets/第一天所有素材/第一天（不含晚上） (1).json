@@ -1,0 +1,1230 @@
+{
+  "metadata": {
+    "projectName": "视觉互动影游项目",
+    "version": "1.0",
+    "exportTime": "2026-05-10T13:32:46.307Z"
+  },
+  "scriptNodes": [
+    {
+      "id": "node_u9ldi4wa",
+      "title": "卧室苏醒",
+      "context": {
+        "day": "第一天",
+        "scene": "卧室",
+        "time": "早晨"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "video",
+        "path": "开头动画超分.mp4"
+      },
+      "text": "到二楼走廊",
+      "logic": {
+        "type": "choice",
+        "branches": [
+          {
+            "target": "node_4vpou80l",
+            "label": "1"
+          },
+          {
+            "target": "node_a33in0in",
+            "label": "1"
+          },
+          {
+            "target": "node_9fecvijy",
+            "label": "1"
+          },
+          {
+            "target": "node_2y1m5tqq",
+            "label": "1"
+          },
+          {
+            "target": "node_k1c9t9yu",
+            "label": "1"
+          },
+          {
+            "target": "node_bqmhea8m",
+            "label": "1"
+          },
+          {
+            "target": "node_u4bvxx0k",
+            "label": "1"
+          },
+          {
+            "target": "node_yv2j7edr",
+            "label": "1"
+          },
+          {
+            "target": "node_ru1pzp7a",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 21,
+        "y": 346
+      }
+    },
+    {
+      "id": "node_4vpou80l",
+      "title": "新场景",
+      "context": {
+        "day": "",
+        "scene": "高守房间",
+        "time": "早晨"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "高守房间.png"
+      },
+      "text": "有行李箱",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 523,
+        "y": -253
+      }
+    },
+    {
+      "id": "node_9fecvijy",
+      "title": "新场景",
+      "context": {
+        "day": "",
+        "scene": "厨房",
+        "time": "早晨"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "厨房.png"
+      },
+      "text": "有王琳",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 517,
+        "y": -575
+      }
+    },
+    {
+      "id": "node_ktq6z4qo",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "任意场景",
+        "time": "早晨"
+      },
+      "trigger": "完成前置",
+      "media": {
+        "type": "image",
+        "path": "第一次探索完.mp3"
+      },
+      "text": "任意场景",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_q7u2od17",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 1076,
+        "y": 403
+      }
+    },
+    {
+      "id": "node_2y1m5tqq",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "二楼走廊",
+        "time": "早晨"
+      },
+      "trigger": "点击二楼卫生间",
+      "media": {
+        "type": "video",
+        "path": "二楼卫生间.mp4"
+      },
+      "text": "到二楼卫生间",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_ktq6z4qo",
+            "label": "前置全部完成"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 527,
+        "y": -48
+      }
+    },
+    {
+      "id": "node_q7u2od17",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "高守房间",
+        "time": "早晨"
+      },
+      "trigger": "点击行李箱",
+      "media": {
+        "type": "image",
+        "path": "高守房间.png"
+      },
+      "text": "弹出选项框：A.开始整理（结束自由探索）\nB.再逛逛",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_p491en72",
+            "label": "选择A"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 1572,
+        "y": 376
+      }
+    },
+    {
+      "id": "node_u01cf1pp",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "厨房",
+        "time": "下午"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "video",
+        "path": "帮王琳洗碗.mp4"
+      },
+      "text": "",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_xdyasosy",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 3458,
+        "y": -251
+      }
+    },
+    {
+      "id": "node_k9lnvn40",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "大客厅",
+        "time": "下午"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "是否找刘鸣借钱？.png"
+      },
+      "text": "",
+      "logic": {
+        "type": "choice",
+        "branches": [
+          {
+            "target": "node_ddij1c2f",
+            "label": "借钱"
+          },
+          {
+            "target": "node_ngzruta3",
+            "label": "不借钱"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 2950,
+        "y": 296
+      }
+    },
+    {
+      "id": "node_6128rubp",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "厨房",
+        "time": "下午"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "是否帮王琳刷碗？.png"
+      },
+      "text": "",
+      "logic": {
+        "type": "choice",
+        "branches": [
+          {
+            "target": "node_u01cf1pp",
+            "label": "帮"
+          },
+          {
+            "target": "node_utllct9v",
+            "label": "不帮"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 2954,
+        "y": -63
+      }
+    },
+    {
+      "id": "node_xdyasosy",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "家务活+1.png"
+      },
+      "text": "家务活+1（结算画面，点击左键跳过）",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_4y1jmov4",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 3888,
+        "y": -299
+      }
+    },
+    {
+      "id": "node_utllct9v",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "厨房",
+        "time": "下午"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "是否帮王琳刷碗？.png"
+      },
+      "text": "到厨房（是否帮王琳刷碗的这个图的厨房）",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 3453,
+        "y": -30
+      }
+    },
+    {
+      "id": "node_a33in0in",
+      "title": "新场景",
+      "context": {
+        "day": "",
+        "scene": "大客厅",
+        "time": "早晨"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "大客厅.png"
+      },
+      "text": "有刘鸣",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 518,
+        "y": -416
+      }
+    },
+    {
+      "id": "node_ru1pzp7a",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "地下室走廊右",
+        "time": "早晨"
+      },
+      "trigger": "点击健身房",
+      "media": {
+        "type": "video",
+        "path": "健身房.mp4"
+      },
+      "text": "到健身房",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_ktq6z4qo",
+            "label": "前置全部完成"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 508,
+        "y": 899
+      }
+    },
+    {
+      "id": "node_ntglt4sb",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "大客厅",
+        "time": "下午"
+      },
+      "trigger": "进入大客厅",
+      "media": {
+        "type": "video",
+        "path": "找刘鸣借钱前.mp4"
+      },
+      "text": "",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_k9lnvn40",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 2516,
+        "y": 351
+      }
+    },
+    {
+      "id": "node_u4bvxx0k",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "主卧区域",
+        "time": "早晨"
+      },
+      "trigger": "点击书房",
+      "media": {
+        "type": "video",
+        "path": "书房.mp4"
+      },
+      "text": "到主卧区域",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_ktq6z4qo",
+            "label": "前置全部完成"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 514,
+        "y": 520
+      }
+    },
+    {
+      "id": "node_bqmhea8m",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "主卧区域",
+        "time": "早晨"
+      },
+      "trigger": "点击主卧室",
+      "media": {
+        "type": "video",
+        "path": "主卧房间.mp4"
+      },
+      "text": "到主卧室",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_ktq6z4qo",
+            "label": "前置全部完成"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 517,
+        "y": 352
+      }
+    },
+    {
+      "id": "node_k1c9t9yu",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "二楼走廊",
+        "time": "早晨"
+      },
+      "trigger": "点击刘昕房间",
+      "media": {
+        "type": "video",
+        "path": "刘昕房间.mp4"
+      },
+      "text": "到刘昕房间",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_ktq6z4qo",
+            "label": "前置全部完成"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 523,
+        "y": 165
+      }
+    },
+    {
+      "id": "node_yv2j7edr",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "地下室走廊左",
+        "time": "早晨"
+      },
+      "trigger": "点击后院",
+      "media": {
+        "type": "video",
+        "path": "后院 .mp4"
+      },
+      "text": "到后院",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_ktq6z4qo",
+            "label": "前置全部完成"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 517,
+        "y": 700
+      }
+    },
+    {
+      "id": "node_hen5s8d6",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "金钱+100.png"
+      },
+      "text": "金钱+100（结算画面，点击左键跳过）",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_4y1jmov4",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 3895,
+        "y": 220
+      }
+    },
+    {
+      "id": "node_ttl2yjhs",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "高守房间",
+        "time": "下午"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "是否和刘昕对话？.png"
+      },
+      "text": "",
+      "logic": {
+        "type": "choice",
+        "branches": [
+          {
+            "target": "node_1r2cb85y",
+            "label": "对话"
+          },
+          {
+            "target": "node_etxc5xdy",
+            "label": "不对话"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 2945,
+        "y": 648
+      }
+    },
+    {
+      "id": "node_1r2cb85y",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "高守房间",
+        "time": "下午"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "video",
+        "path": "与刘昕对话选择前.mp4"
+      },
+      "text": "",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_6ztkk8ni",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 3449,
+        "y": 617
+      }
+    },
+    {
+      "id": "node_kfqt46fx",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "高守房间",
+        "time": "下午"
+      },
+      "trigger": "进入高守房间",
+      "media": {
+        "type": "video",
+        "path": "与刘昕互动前.mp4"
+      },
+      "text": "",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_ttl2yjhs",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 2509,
+        "y": 626
+      }
+    },
+    {
+      "id": "node_p491en72",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "餐厅",
+        "time": "中午"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "video",
+        "path": "吃午饭.mp4"
+      },
+      "text": "到餐厅，游戏提示：每个时间段你只能做一件事情。现在你可以去找刘鸣借钱，或是去帮王琳刷碗，或是去找刘昕玩。但你只能选择和一个人互动。",
+      "logic": {
+        "type": "choice",
+        "branches": [
+          {
+            "target": "node_caly9l9i",
+            "label": "三选一"
+          },
+          {
+            "target": "node_ntglt4sb",
+            "label": "三选一"
+          },
+          {
+            "target": "node_kfqt46fx",
+            "label": "三选一"
+          },
+          {
+            "target": "node_unlglvct",
+            "label": "自由探索"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 1980,
+        "y": 367
+      }
+    },
+    {
+      "id": "node_caly9l9i",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "厨房",
+        "time": "下午"
+      },
+      "trigger": "进入厨房",
+      "media": {
+        "type": "video",
+        "path": "帮王琳刷碗前.mp4"
+      },
+      "text": "",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_6128rubp",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 2508,
+        "y": 81
+      }
+    },
+    {
+      "id": "node_etxc5xdy",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "二楼走廊",
+        "time": "下午"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "none",
+        "path": ""
+      },
+      "text": "退回到二楼走廊",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 3444,
+        "y": 835
+      }
+    },
+    {
+      "id": "node_o79bnovq",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "video",
+        "path": "选择3：真是败给你这个不讲理的小赖皮了.mp4"
+      },
+      "text": "",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_q5cgqi1q",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 4357,
+        "y": 921
+      }
+    },
+    {
+      "id": "node_4y1jmov4",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "晚上"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "video",
+        "path": "捡手表前(1).mp4"
+      },
+      "text": "到公园（长条椅）",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 5203,
+        "y": 186
+      }
+    },
+    {
+      "id": "node_wmjk959l",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "video",
+        "path": "选择2：你是想多跟我呆在一起吧？.mp4"
+      },
+      "text": "",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_hgc2tbj2",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 4363,
+        "y": 725
+      }
+    },
+    {
+      "id": "node_ddij1c2f",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "大客厅",
+        "time": "下午"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "video",
+        "path": "找刘鸣借钱.mp4"
+      },
+      "text": "",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_hen5s8d6",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 3448,
+        "y": 225
+      }
+    },
+    {
+      "id": "node_hgc2tbj2",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "与刘昕对话选择B.png"
+      },
+      "text": "好感度+0（结算画面，点击左键跳过）",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_4y1jmov4",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 4797,
+        "y": 739
+      }
+    },
+    {
+      "id": "node_ngzruta3",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "大客厅",
+        "time": "下午"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "none",
+        "path": ""
+      },
+      "text": "到大客厅（是否找刘鸣借钱的这个图的大客厅）",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 3445,
+        "y": 423
+      }
+    },
+    {
+      "id": "node_g4xeoupo",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "none",
+        "path": ""
+      },
+      "text": "",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 9935,
+        "y": 543
+      }
+    },
+    {
+      "id": "node_ajia9f22",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "none",
+        "path": ""
+      },
+      "text": "",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 9984,
+        "y": 978
+      }
+    },
+    {
+      "id": "node_s0iekh34",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "none",
+        "path": ""
+      },
+      "text": "",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 9972,
+        "y": 747
+      }
+    },
+    {
+      "id": "node_063imft1",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "none",
+        "path": ""
+      },
+      "text": "",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 11151,
+        "y": 1099
+      }
+    },
+    {
+      "id": "node_8xu9mzu9",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "video",
+        "path": "选择1：你这是双标.mp4"
+      },
+      "text": "",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_ucu5s4em",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 4368,
+        "y": 468
+      }
+    },
+    {
+      "id": "node_cg6msx9s",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "none",
+        "path": ""
+      },
+      "text": "",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 10913,
+        "y": 829
+      }
+    },
+    {
+      "id": "node_6ztkk8ni",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "刘昕对话选择ABC.png"
+      },
+      "text": "",
+      "logic": {
+        "type": "choice",
+        "branches": [
+          {
+            "target": "node_8xu9mzu9",
+            "label": "1"
+          },
+          {
+            "target": "node_wmjk959l",
+            "label": "1"
+          },
+          {
+            "target": "node_o79bnovq",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 3893,
+        "y": 625
+      }
+    },
+    {
+      "id": "node_ucu5s4em",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "与刘昕对话选择A.png"
+      },
+      "text": "好感度-1（结算画面，点击左键跳过）",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_4y1jmov4",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 4791,
+        "y": 482
+      }
+    },
+    {
+      "id": "node_unlglvct",
+      "title": "新场景",
+      "context": {
+        "day": "",
+        "scene": "健身房",
+        "time": "下午"
+      },
+      "trigger": "进入健身房",
+      "media": {
+        "type": "image",
+        "path": "健身房下午（带刘昕写真）.png"
+      },
+      "text": "场景中隐藏一张刘昕的写张照",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_bj5thhuy",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 2301,
+        "y": 1126
+      }
+    },
+    {
+      "id": "node_q5cgqi1q",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "image",
+        "path": "与刘昕对话选择C.png"
+      },
+      "text": "好感度+1（结算画面，点击左键跳过）",
+      "logic": {
+        "type": "linear",
+        "branches": [
+          {
+            "target": "node_4y1jmov4",
+            "label": "1"
+          }
+        ]
+      },
+      "ui_position": {
+        "x": 4794,
+        "y": 955
+      }
+    },
+    {
+      "id": "node_bqauxhvg",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "none",
+        "path": ""
+      },
+      "text": "",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 10463,
+        "y": 1099
+      }
+    },
+    {
+      "id": "node_b598223n",
+      "title": "新剧情环节",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "自动流转",
+      "media": {
+        "type": "none",
+        "path": ""
+      },
+      "text": "",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 9622,
+        "y": 692
+      }
+    },
+    {
+      "id": "node_bj5thhuy",
+      "title": "图片",
+      "context": {
+        "day": "",
+        "scene": "未设定场景",
+        "time": "未设定时间"
+      },
+      "trigger": "点击照片",
+      "media": {
+        "type": "image",
+        "path": "刘昕写真1.png"
+      },
+      "text": "取得刘昕写真1，点击左键跳过，返回普通的后院下午场景（没有刘昕写真的健身房下午）",
+      "logic": {
+        "type": "end",
+        "branches": []
+      },
+      "ui_position": {
+        "x": 2767,
+        "y": 1128
+      }
+    }
+  ]
+}

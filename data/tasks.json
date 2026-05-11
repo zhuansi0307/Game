@@ -1,0 +1,867 @@
+{
+  "tasks": [
+    {
+      "id": "task_morning_liuxin_room",
+      "title": "二楼走廊 / 点击刘昕房间 / 刘昕房间",
+      "description": "到刘昕房间",
+      "chapter": 1,
+      "display_order": 10,
+      "repeatable": false,
+      "trigger": {
+        "scene": "second_floor_hallway",
+        "hotspot_id": "to_liuxin_room",
+        "period": "morning",
+        "condition_type": "scene_hotspot"
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "cutscene_arrive",
+          "cutscene_id": "cutscene_node_k1c9t9yu",
+          "next_step": 2,
+          "target_scene": "liuxin_room"
+        },
+        {
+          "step": 2,
+          "type": "complete",
+          "target_scene": "liuxin_room"
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_morning_liuxin_room_completed": true
+        }
+      },
+      "guide": "点击刘昕房间"
+    },
+    {
+      "id": "task_morning_hallway_bathroom",
+      "title": "二楼走廊 / 点击二楼卫生间 / 二楼卫生间",
+      "description": "到二楼卫生间",
+      "chapter": 1,
+      "display_order": 11,
+      "repeatable": false,
+      "trigger": {
+        "scene": "second_floor_hallway",
+        "hotspot_id": "to_hallway_bathroom",
+        "period": "morning",
+        "condition_type": "scene_hotspot"
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "cutscene_arrive",
+          "cutscene_id": "cutscene_node_2y1m5tqq",
+          "next_step": 2,
+          "target_scene": "second_floor_hallway"
+        },
+        {
+          "step": 2,
+          "type": "complete",
+          "target_scene": "second_floor_hallway"
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_morning_hallway_bathroom_completed": true
+        }
+      },
+      "guide": "点击二楼卫生间"
+    },
+    {
+      "id": "task_morning_master_bedroom",
+      "title": "主卧区域 / 点击主卧室 / 主卧房间",
+      "description": "到主卧室",
+      "chapter": 1,
+      "display_order": 12,
+      "repeatable": false,
+      "trigger": {
+        "scene": "master_bedroom_area",
+        "hotspot_id": "to_master_bedroom",
+        "period": "morning",
+        "condition_type": "scene_hotspot"
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "cutscene_arrive",
+          "cutscene_id": "cutscene_node_bqmhea8m",
+          "next_step": 2,
+          "target_scene": "master_bedroom"
+        },
+        {
+          "step": 2,
+          "type": "complete",
+          "target_scene": "master_bedroom"
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_morning_master_bedroom_completed": true
+        }
+      },
+      "guide": "点击主卧室"
+    },
+    {
+      "id": "task_morning_study",
+      "title": "主卧区域 / 点击书房 / 书房",
+      "description": "到主卧区域",
+      "chapter": 1,
+      "display_order": 13,
+      "repeatable": false,
+      "trigger": {
+        "scene": "master_bedroom_area",
+        "hotspot_id": "to_study_room",
+        "period": "morning",
+        "condition_type": "scene_hotspot"
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "cutscene_arrive",
+          "cutscene_id": "cutscene_node_u4bvxx0k",
+          "next_step": 2,
+          "target_scene": "master_bedroom_area"
+        },
+        {
+          "step": 2,
+          "type": "complete",
+          "target_scene": "master_bedroom_area"
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_morning_study_completed": true
+        }
+      },
+      "guide": "点击书房"
+    },
+    {
+      "id": "task_morning_courtyard",
+      "title": "地下室走廊左 / 点击后院 / 后院 ",
+      "description": "到后院",
+      "chapter": 1,
+      "display_order": 14,
+      "repeatable": false,
+      "trigger": {
+        "scene": "basement_left",
+        "hotspot_id": "to_basement_courtyard",
+        "period": "morning",
+        "condition_type": "scene_hotspot"
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "cutscene_arrive",
+          "cutscene_id": "cutscene_node_yv2j7edr",
+          "next_step": 2,
+          "target_scene": "basement_courtyard"
+        },
+        {
+          "step": 2,
+          "type": "complete",
+          "target_scene": "basement_courtyard"
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_morning_courtyard_completed": true
+        }
+      },
+      "guide": "点击后院"
+    },
+    {
+      "id": "task_morning_gym",
+      "title": "地下室走廊右 / 点击健身房 / 健身房",
+      "description": "到健身房",
+      "chapter": 1,
+      "display_order": 15,
+      "repeatable": false,
+      "trigger": {
+        "scene": "basement_right",
+        "hotspot_id": "to_gym",
+        "period": "morning",
+        "condition_type": "scene_hotspot"
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "cutscene_arrive",
+          "cutscene_id": "cutscene_node_ru1pzp7a",
+          "next_step": 2,
+          "target_scene": "gym"
+        },
+        {
+          "step": 2,
+          "type": "complete",
+          "target_scene": "gym"
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_morning_gym_completed": true
+        }
+      },
+      "guide": "点击健身房"
+    },
+    {
+      "id": "task_first_explore_complete",
+      "title": "任意场景 / 完成前置 / 第一次探索完",
+      "description": "任意场景",
+      "chapter": 1,
+      "display_order": 20,
+      "repeatable": false,
+      "trigger": {
+        "condition_type": "always"
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_ktq6z4qo",
+          "next_step": 2
+        },
+        {
+          "step": 2,
+          "type": "complete"
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_first_explore_complete_completed": true
+        }
+      },
+      "prerequisites": [
+        "task_morning_liuxin_room",
+        "task_morning_hallway_bathroom",
+        "task_morning_master_bedroom",
+        "task_morning_study",
+        "task_morning_courtyard",
+        "task_morning_gym"
+      ],
+      "guide": "高守房间 / 点击行李箱 / 高守房间"
+    },
+    {
+      "id": "task_luggage_lunch",
+      "title": "高守房间 / 点击行李箱 / 高守房间",
+      "description": "弹出选项框：A.开始整理（结束自由探索）\nB.再逛逛",
+      "chapter": 1,
+      "display_order": 30,
+      "repeatable": true,
+      "trigger": {
+        "scene": "gaoshou_room",
+        "hotspot_id": "luggage",
+        "period": "morning",
+        "condition_type": "scene_hotspot",
+        "conditions": [
+          {
+            "not_flag": "after_lunch_free_roam_unlocked"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "choice",
+          "background": "第一天所有素材/高守房间.png",
+          "guide": "弹出选项框：A.开始整理（结束自由探索）\nB.再逛逛",
+          "choices": [
+            {
+              "text": "选择A",
+              "action": "start",
+              "variable": "luggage_choice",
+              "next_step": 2
+            },
+            {
+              "text": "B",
+              "action": "roam",
+              "variable": "luggage_choice",
+              "next_step": 4
+            }
+          ]
+        },
+        {
+          "step": 2,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_p491en72",
+          "next_step": 3
+        },
+        {
+          "step": 3,
+          "type": "complete",
+          "target_scene": "restaurant",
+          "flags": {
+            "task_lunch_completed": true,
+            "after_lunch_free_roam_unlocked": true
+          },
+          "reward": {
+            "time_period": "afternoon"
+          },
+          "guide": "到餐厅，游戏提示：每个时间段你只能做一件事情。现在你可以去找刘鸣借钱，或是去帮王琳刷碗，或是去找刘昕玩。但你只能选择和一个人互动。"
+        },
+        {
+          "step": 4,
+          "type": "complete",
+          "target_scene": "gaoshou_room"
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_luggage_lunch_completed": true
+        }
+      },
+      "prerequisites": [
+        "task_first_explore_complete"
+      ],
+      "guide": "点击行李箱"
+    },
+    {
+      "id": "task_wanglin_afternoon",
+      "title": "厨房 / 进入厨房 / 帮王琳刷碗前",
+      "description": "厨房 / 进入厨房 / 帮王琳刷碗前",
+      "chapter": 1,
+      "display_order": 40,
+      "repeatable": false,
+      "trigger": {
+        "scene": "kitchen",
+        "period": "afternoon",
+        "condition_type": "scene_only",
+        "conditions": [
+          {
+            "flag": "after_lunch_free_roam_unlocked"
+          },
+          {
+            "not_flag": "after_lunch_single_task_chosen"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_caly9l9i",
+          "next_step": 2,
+          "reward": {
+            "flags": {
+              "after_lunch_single_task_chosen": true
+            },
+            "variables": {
+              "after_lunch_selected_task": "wanglin"
+            }
+          }
+        },
+        {
+          "step": 2,
+          "type": "choice",
+          "background": "第一天所有素材/是否帮王琳刷碗？.png",
+          "guide": "厨房 / 自动流转 / 是否帮王琳刷碗？",
+          "choices": [
+            {
+              "text": "帮",
+              "action": "help",
+              "variable": "help_wanglin_wash_choice",
+              "next_step": 3,
+              "flags": {
+                "help_wanglin_wash_choice_help": true
+              }
+            },
+            {
+              "text": "不帮",
+              "action": "not_help",
+              "variable": "help_wanglin_wash_choice",
+              "next_step": 6,
+              "flags": {
+                "help_wanglin_wash_choice_not_help": true
+              }
+            }
+          ]
+        },
+        {
+          "step": 3,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_u01cf1pp",
+          "next_step": 4
+        },
+        {
+          "step": 4,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_xdyasosy",
+          "next_step": 5,
+          "reward": {
+            "player_stats": {
+              "housework": 1
+            },
+            "flags": {
+              "housework_plus_1": true
+            }
+          }
+        },
+        {
+          "step": 5,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_4y1jmov4",
+          "next_step": 7,
+          "reward": {
+            "time_period": "evening"
+          }
+        },
+        {
+          "step": 6,
+          "type": "complete",
+          "target_scene": "kitchen",
+          "flags": {
+            "task_wanglin_refused": true
+          }
+        },
+        {
+          "step": 7,
+          "type": "complete",
+          "target_scene": "kitchen",
+          "flags": {
+            "task_wanglin_helped": true
+          }
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_wanglin_afternoon_completed": true,
+          "wanglin_afternoon_done": true
+        }
+      },
+      "prerequisites": [
+        "task_luggage_lunch"
+      ],
+      "guide": "厨房 / 进入厨房 / 帮王琳刷碗前"
+    },
+    {
+      "id": "task_liuming_borrow_money",
+      "title": "大客厅 / 进入大客厅 / 找刘鸣借钱前",
+      "description": "大客厅 / 进入大客厅 / 找刘鸣借钱前",
+      "chapter": 1,
+      "display_order": 41,
+      "repeatable": false,
+      "trigger": {
+        "scene": "living_room",
+        "period": "afternoon",
+        "condition_type": "scene_only",
+        "conditions": [
+          {
+            "flag": "after_lunch_free_roam_unlocked"
+          },
+          {
+            "not_flag": "after_lunch_single_task_chosen"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_ntglt4sb",
+          "next_step": 2,
+          "reward": {
+            "flags": {
+              "after_lunch_single_task_chosen": true
+            },
+            "variables": {
+              "after_lunch_selected_task": "liuming"
+            }
+          }
+        },
+        {
+          "step": 2,
+          "type": "choice",
+          "background": "第一天所有素材/是否找刘鸣借钱？.png",
+          "guide": "大客厅 / 自动流转 / 是否找刘鸣借钱？",
+          "choices": [
+            {
+              "text": "借钱",
+              "action": "borrow",
+              "variable": "liuming_borrow_choice",
+              "next_step": 3,
+              "flags": {
+                "liuming_borrow_choice_borrow": true
+              }
+            },
+            {
+              "text": "不借钱",
+              "action": "not_borrow",
+              "variable": "liuming_borrow_choice",
+              "next_step": 6,
+              "flags": {
+                "liuming_borrow_choice_not_borrow": true
+              }
+            }
+          ]
+        },
+        {
+          "step": 3,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_ddij1c2f",
+          "next_step": 4
+        },
+        {
+          "step": 4,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_hen5s8d6",
+          "next_step": 5,
+          "reward": {
+            "player_stats": {
+              "money": 100
+            },
+            "flags": {
+              "money_plus_100": true
+            }
+          }
+        },
+        {
+          "step": 5,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_4y1jmov4",
+          "next_step": 7,
+          "reward": {
+            "time_period": "evening"
+          }
+        },
+        {
+          "step": 6,
+          "type": "complete",
+          "target_scene": "living_room",
+          "flags": {
+            "task_liuming_not_borrowed": true
+          }
+        },
+        {
+          "step": 7,
+          "type": "complete",
+          "target_scene": "living_room",
+          "flags": {
+            "task_liuming_borrowed": true
+          }
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_liuming_borrow_money_completed": true,
+          "liuming_borrow_money_done": true
+        }
+      },
+      "prerequisites": [
+        "task_luggage_lunch"
+      ],
+      "guide": "大客厅 / 进入大客厅 / 找刘鸣借钱前"
+    },
+    {
+      "id": "task_liuxin_interaction",
+      "title": "高守房间 / 进入高守房间 / 与刘昕互动前",
+      "description": "高守房间 / 进入高守房间 / 与刘昕互动前",
+      "chapter": 1,
+      "display_order": 42,
+      "repeatable": false,
+      "trigger": {
+        "scene": "gaoshou_room",
+        "period": "afternoon",
+        "condition_type": "scene_only",
+        "conditions": [
+          {
+            "flag": "after_lunch_free_roam_unlocked"
+          },
+          {
+            "not_flag": "after_lunch_single_task_chosen"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_kfqt46fx",
+          "next_step": 2,
+          "reward": {
+            "flags": {
+              "after_lunch_single_task_chosen": true
+            },
+            "variables": {
+              "after_lunch_selected_task": "liuxin"
+            }
+          }
+        },
+        {
+          "step": 2,
+          "type": "choice",
+          "background": "第一天所有素材/是否和刘昕对话？.png",
+          "guide": "高守房间 / 自动流转 / 是否和刘昕对话？",
+          "choices": [
+            {
+              "text": "对话",
+              "action": "talk",
+              "variable": "liuxin_talk_choice",
+              "next_step": 3,
+              "flags": {
+                "liuxin_talk_choice_talk": true
+              }
+            },
+            {
+              "text": "不对话",
+              "action": "not_talk",
+              "variable": "liuxin_talk_choice",
+              "next_step": 13,
+              "flags": {
+                "liuxin_talk_choice_not_talk": true
+              }
+            }
+          ]
+        },
+        {
+          "step": 3,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_1r2cb85y",
+          "next_step": 4
+        },
+        {
+          "step": 4,
+          "type": "choice",
+          "background": "第一天所有素材/刘昕对话选择ABC.png",
+          "guide": "未设定场景 / 自动流转 / 刘昕对话选择ABC",
+          "choices": [
+            {
+              "text": "选择1：你这是双标",
+              "action": "choice_a",
+              "variable": "liuxin_interaction_choice",
+              "next_step": 5,
+              "flags": {
+                "liuxin_choice_a": true
+              }
+            },
+            {
+              "text": "选择2：你是想多跟我呆在一起吧？",
+              "action": "choice_b",
+              "variable": "liuxin_interaction_choice",
+              "next_step": 6,
+              "flags": {
+                "liuxin_choice_b": true
+              }
+            },
+            {
+              "text": "选择3：真是败给你这个不讲理的小赖皮了",
+              "action": "choice_c",
+              "variable": "liuxin_interaction_choice",
+              "next_step": 7,
+              "flags": {
+                "liuxin_choice_c": true
+              }
+            }
+          ]
+        },
+        {
+          "step": 5,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_8xu9mzu9",
+          "next_step": 8
+        },
+        {
+          "step": 6,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_wmjk959l",
+          "next_step": 9
+        },
+        {
+          "step": 7,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_o79bnovq",
+          "next_step": 10
+        },
+        {
+          "step": 8,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_ucu5s4em",
+          "next_step": 11,
+          "reward": {
+            "npc_affections": {
+              "liuxin": -1
+            },
+            "flags": {
+              "liuxin_affection_minus_1": true
+            }
+          }
+        },
+        {
+          "step": 9,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_hgc2tbj2",
+          "next_step": 11,
+          "reward": {
+            "npc_affections": {
+              "liuxin": 0
+            },
+            "flags": {
+              "liuxin_affection_plus_0": true
+            }
+          }
+        },
+        {
+          "step": 10,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_q5cgqi1q",
+          "next_step": 11,
+          "reward": {
+            "npc_affections": {
+              "liuxin": 1
+            },
+            "flags": {
+              "liuxin_affection_plus_1": true
+            }
+          }
+        },
+        {
+          "step": 11,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_4y1jmov4",
+          "next_step": 12,
+          "reward": {
+            "time_period": "evening"
+          }
+        },
+        {
+          "step": 12,
+          "type": "complete",
+          "target_scene": "gaoshou_room",
+          "flags": {
+            "task_liuxin_talked": true
+          }
+        },
+        {
+          "step": 13,
+          "type": "complete",
+          "target_scene": "second_floor_hallway",
+          "flags": {
+            "task_liuxin_not_talked": true
+          }
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_liuxin_interaction_completed": true,
+          "liuxin_interaction_done": true
+        }
+      },
+      "prerequisites": [
+        "task_luggage_lunch"
+      ],
+      "guide": "高守房间 / 进入高守房间 / 与刘昕互动前"
+    },
+    {
+      "id": "task_gym_photo_scene",
+      "title": "健身房 / 进入健身房 / 健身房下午（带刘昕写真）",
+      "description": "场景中隐藏一张刘昕的写张照",
+      "chapter": 1,
+      "display_order": 50,
+      "repeatable": false,
+      "trigger": {
+        "scene": "gym",
+        "period": "afternoon",
+        "condition_type": "scene_only",
+        "conditions": [
+          {
+            "flag": "after_lunch_free_roam_unlocked"
+          },
+          {
+            "not_flag": "after_lunch_single_task_chosen"
+          },
+          {
+            "not_flag": "liuxin_photo_scene_seen"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_unlglvct",
+          "next_step": 2
+        },
+        {
+          "step": 2,
+          "type": "complete",
+          "target_scene": "gym",
+          "flags": {
+            "liuxin_photo_scene_seen": true
+          }
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_gym_photo_scene_completed": true,
+          "liuxin_photo_scene_seen": true
+        }
+      },
+      "prerequisites": [
+        "task_luggage_lunch"
+      ],
+      "guide": "健身房 / 进入健身房 / 健身房下午（带刘昕写真）"
+    },
+    {
+      "id": "task_collect_liuxin_photo",
+      "title": "未设定场景 / 点击照片 / 刘昕写真1",
+      "description": "取得刘昕写真1，点击左键跳过，返回普通的后院下午场景（没有刘昕写真的健身房下午）",
+      "chapter": 1,
+      "display_order": 51,
+      "repeatable": false,
+      "trigger": {
+        "scene": "gym",
+        "hotspot_id": "liuxin_photo",
+        "period": "afternoon",
+        "condition_type": "scene_hotspot",
+        "conditions": [
+          {
+            "flag": "liuxin_photo_scene_seen"
+          },
+          {
+            "not_flag": "liuxin_photo_1_collected"
+          },
+          {
+            "not_flag": "after_lunch_single_task_chosen"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "step": 1,
+          "type": "cutscene",
+          "cutscene_id": "cutscene_node_bj5thhuy",
+          "next_step": 2,
+          "reward": {
+            "flags": {
+              "liuxin_photo_1_collected": true,
+              "after_lunch_single_task_chosen": true
+            },
+            "variables": {
+              "after_lunch_selected_task": "free_explore"
+            }
+          }
+        },
+        {
+          "step": 2,
+          "type": "complete",
+          "target_scene": "gym"
+        }
+      ],
+      "completion_reward": {
+        "flags": {
+          "task_collect_liuxin_photo_completed": true,
+          "liuxin_photo_1_collected": true
+        }
+      },
+      "prerequisites": [
+        "task_gym_photo_scene"
+      ],
+      "guide": "未设定场景 / 点击照片 / 刘昕写真1"
+    }
+  ],
+  "task_globals": {
+    "auto_check_trigger": true,
+    "show_notification": true,
+    "notification_duration": 3.0,
+    "source": "第一天所有素材/第一天（不含晚上） (1).json"
+  }
+}

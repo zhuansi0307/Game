@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "timestamp": "1970-01-01T00:00:00",
+  "playtime": "00:00:00",
+  "current_scene": "main_menu",
+  "discovered_hotspots": [],
+  "variables": {},
+  "player_stats": {
+    "intelligence": 0,
+    "stamina": 100,
+    "money": 0
+  },
+  "npc_affections": {}
+}

@@ -1,0 +1,503 @@
+{
+  "cutscenes": [
+    {
+      "id": "opening_video",
+      "title": "卧室 / 自动流转 / 开头动画超分",
+      "source_node": "node_u9ldi4wa",
+      "source_trigger": "自动流转",
+      "type": "video",
+      "video": "第一天所有素材/开头动画超分.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_4vpou80l",
+      "title": "高守房间 / 自动流转 / 高守房间",
+      "source_node": "node_4vpou80l",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/高守房间.png",
+          "duration": 2.5,
+          "dialogue": {
+            "speaker": "",
+            "text": "有行李箱"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_9fecvijy",
+      "title": "厨房 / 自动流转 / 厨房",
+      "source_node": "node_9fecvijy",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/厨房.png",
+          "duration": 2.5,
+          "dialogue": {
+            "speaker": "",
+            "text": "有王琳"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_ktq6z4qo",
+      "title": "任意场景 / 完成前置 / 第一次探索完",
+      "source_node": "node_ktq6z4qo",
+      "source_trigger": "完成前置",
+      "type": "image",
+      "frames": [
+        {
+          "image": "bg/二楼走廊早晨.png",
+          "duration": 3.0
+        }
+      ],
+      "audio": "第一天所有素材/第一次探索完.mp3"
+    },
+    {
+      "id": "cutscene_node_2y1m5tqq",
+      "title": "二楼走廊 / 点击二楼卫生间 / 二楼卫生间",
+      "source_node": "node_2y1m5tqq",
+      "source_trigger": "点击二楼卫生间",
+      "type": "video",
+      "video": "第一天所有素材/二楼卫生间.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_q7u2od17",
+      "title": "高守房间 / 点击行李箱 / 高守房间",
+      "source_node": "node_q7u2od17",
+      "source_trigger": "点击行李箱",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/高守房间.png",
+          "duration": 2.5,
+          "dialogue": {
+            "speaker": "",
+            "text": "弹出选项框：A.开始整理（结束自由探索）\nB.再逛逛"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_u01cf1pp",
+      "title": "厨房 / 自动流转 / 帮王琳洗碗",
+      "source_node": "node_u01cf1pp",
+      "source_trigger": "自动流转",
+      "type": "video",
+      "video": "第一天所有素材/帮王琳洗碗.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_k9lnvn40",
+      "title": "大客厅 / 自动流转 / 是否找刘鸣借钱？",
+      "source_node": "node_k9lnvn40",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/是否找刘鸣借钱？.png",
+          "duration": 2.5
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_6128rubp",
+      "title": "厨房 / 自动流转 / 是否帮王琳刷碗？",
+      "source_node": "node_6128rubp",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/是否帮王琳刷碗？.png",
+          "duration": 2.5
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_xdyasosy",
+      "title": "未设定场景 / 自动流转 / 家务活+1",
+      "source_node": "node_xdyasosy",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/家务活+1.png",
+          "duration": 2.5,
+          "dialogue": {
+            "speaker": "",
+            "text": "家务活+1（结算画面，点击左键跳过）"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_utllct9v",
+      "title": "厨房 / 自动流转 / 是否帮王琳刷碗？",
+      "source_node": "node_utllct9v",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/是否帮王琳刷碗？.png",
+          "duration": 2.5,
+          "dialogue": {
+            "speaker": "",
+            "text": "到厨房（是否帮王琳刷碗的这个图的厨房）"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_a33in0in",
+      "title": "大客厅 / 自动流转 / 大客厅",
+      "source_node": "node_a33in0in",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/大客厅.png",
+          "duration": 2.5,
+          "dialogue": {
+            "speaker": "",
+            "text": "有刘鸣"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_ru1pzp7a",
+      "title": "地下室走廊右 / 点击健身房 / 健身房",
+      "source_node": "node_ru1pzp7a",
+      "source_trigger": "点击健身房",
+      "type": "video",
+      "video": "第一天所有素材/健身房.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_ntglt4sb",
+      "title": "大客厅 / 进入大客厅 / 找刘鸣借钱前",
+      "source_node": "node_ntglt4sb",
+      "source_trigger": "进入大客厅",
+      "type": "video",
+      "video": "第一天所有素材/找刘鸣借钱前.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_u4bvxx0k",
+      "title": "主卧区域 / 点击书房 / 书房",
+      "source_node": "node_u4bvxx0k",
+      "source_trigger": "点击书房",
+      "type": "video",
+      "video": "第一天所有素材/书房.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_bqmhea8m",
+      "title": "主卧区域 / 点击主卧室 / 主卧房间",
+      "source_node": "node_bqmhea8m",
+      "source_trigger": "点击主卧室",
+      "type": "video",
+      "video": "第一天所有素材/主卧房间.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_k1c9t9yu",
+      "title": "二楼走廊 / 点击刘昕房间 / 刘昕房间",
+      "source_node": "node_k1c9t9yu",
+      "source_trigger": "点击刘昕房间",
+      "type": "video",
+      "video": "第一天所有素材/刘昕房间.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_yv2j7edr",
+      "title": "地下室走廊左 / 点击后院 / 后院 ",
+      "source_node": "node_yv2j7edr",
+      "source_trigger": "点击后院",
+      "type": "video",
+      "video": "第一天所有素材/后院 .mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_hen5s8d6",
+      "title": "未设定场景 / 自动流转 / 金钱+100",
+      "source_node": "node_hen5s8d6",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/金钱+100.png",
+          "duration": 2.5,
+          "dialogue": {
+            "speaker": "",
+            "text": "金钱+100（结算画面，点击左键跳过）"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_ttl2yjhs",
+      "title": "高守房间 / 自动流转 / 是否和刘昕对话？",
+      "source_node": "node_ttl2yjhs",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/是否和刘昕对话？.png",
+          "duration": 2.5
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_1r2cb85y",
+      "title": "高守房间 / 自动流转 / 与刘昕对话选择前",
+      "source_node": "node_1r2cb85y",
+      "source_trigger": "自动流转",
+      "type": "video",
+      "video": "第一天所有素材/与刘昕对话选择前.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_kfqt46fx",
+      "title": "高守房间 / 进入高守房间 / 与刘昕互动前",
+      "source_node": "node_kfqt46fx",
+      "source_trigger": "进入高守房间",
+      "type": "video",
+      "video": "第一天所有素材/与刘昕互动前.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_p491en72",
+      "title": "餐厅 / 自动流转 / 吃午饭",
+      "source_node": "node_p491en72",
+      "source_trigger": "自动流转",
+      "type": "video",
+      "video": "第一天所有素材/吃午饭.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_caly9l9i",
+      "title": "厨房 / 进入厨房 / 帮王琳刷碗前",
+      "source_node": "node_caly9l9i",
+      "source_trigger": "进入厨房",
+      "type": "video",
+      "video": "第一天所有素材/帮王琳刷碗前.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_o79bnovq",
+      "title": "未设定场景 / 自动流转 / 选择3：真是败给你这个不讲理的小赖皮了",
+      "source_node": "node_o79bnovq",
+      "source_trigger": "自动流转",
+      "type": "video",
+      "video": "第一天所有素材/选择3：真是败给你这个不讲理的小赖皮了.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_4y1jmov4",
+      "title": "未设定场景 / 自动流转 / 捡手表前(1)",
+      "source_node": "node_4y1jmov4",
+      "source_trigger": "自动流转",
+      "type": "video",
+      "video": "第一天所有素材/捡手表前(1).mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_wmjk959l",
+      "title": "未设定场景 / 自动流转 / 选择2：你是想多跟我呆在一起吧？",
+      "source_node": "node_wmjk959l",
+      "source_trigger": "自动流转",
+      "type": "video",
+      "video": "第一天所有素材/选择2：你是想多跟我呆在一起吧？.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_ddij1c2f",
+      "title": "大客厅 / 自动流转 / 找刘鸣借钱",
+      "source_node": "node_ddij1c2f",
+      "source_trigger": "自动流转",
+      "type": "video",
+      "video": "第一天所有素材/找刘鸣借钱.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_hgc2tbj2",
+      "title": "未设定场景 / 自动流转 / 与刘昕对话选择B",
+      "source_node": "node_hgc2tbj2",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/与刘昕对话选择B.png",
+          "duration": 2.5,
+          "dialogue": {
+            "speaker": "",
+            "text": "好感度+0（结算画面，点击左键跳过）"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_8xu9mzu9",
+      "title": "未设定场景 / 自动流转 / 选择1：你这是双标",
+      "source_node": "node_8xu9mzu9",
+      "source_trigger": "自动流转",
+      "type": "video",
+      "video": "第一天所有素材/选择1：你这是双标.mp4",
+      "duration": 0,
+      "dialogues": [],
+      "audio": null,
+      "sfx_click": null
+    },
+    {
+      "id": "cutscene_node_6ztkk8ni",
+      "title": "未设定场景 / 自动流转 / 刘昕对话选择ABC",
+      "source_node": "node_6ztkk8ni",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/刘昕对话选择ABC.png",
+          "duration": 2.5
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_ucu5s4em",
+      "title": "未设定场景 / 自动流转 / 与刘昕对话选择A",
+      "source_node": "node_ucu5s4em",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/与刘昕对话选择A.png",
+          "duration": 2.5,
+          "dialogue": {
+            "speaker": "",
+            "text": "好感度-1（结算画面，点击左键跳过）"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_unlglvct",
+      "title": "健身房 / 进入健身房 / 健身房下午（带刘昕写真）",
+      "source_node": "node_unlglvct",
+      "source_trigger": "进入健身房",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/健身房下午带刘昕写真）.png.png",
+          "duration": 2.5,
+          "dialogue": {
+            "speaker": "",
+            "text": "场景中隐藏一张刘昕的写张照"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_q5cgqi1q",
+      "title": "未设定场景 / 自动流转 / 与刘昕对话选择C",
+      "source_node": "node_q5cgqi1q",
+      "source_trigger": "自动流转",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/与刘昕对话选择C.png",
+          "duration": 2.5,
+          "dialogue": {
+            "speaker": "",
+            "text": "好感度+1（结算画面，点击左键跳过）"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cutscene_node_bj5thhuy",
+      "title": "未设定场景 / 点击照片 / 刘昕写真1",
+      "source_node": "node_bj5thhuy",
+      "source_trigger": "点击照片",
+      "type": "image",
+      "frames": [
+        {
+          "image": "第一天所有素材/刘昕写真1.png",
+          "duration": 2.5,
+          "dialogue": {
+            "speaker": "",
+            "text": "取得刘昕写真1，点击左键跳过，返回普通的后院下午场景（没有刘昕写真的健身房下午）"
+          }
+        }
+      ]
+    }
+  ],
+  "cutscene_globals": {
+    "default_transition": "fade",
+    "transition_duration": 0.5,
+    "enable_skip": true,
+    "enable_progress_bar": true,
+    "video_fps": 30,
+    "video_buffer_config": {
+      "buffer_size": 30,
+      "max_cache_size": 90,
+      "buffer_min_frames": 8,
+      "buffer_max_wait": 0.3
+    }
+  }
+}
