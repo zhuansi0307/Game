@@ -6,6 +6,7 @@
 import os
 import pygame
 import json
+import copy
 from pathlib import Path
 
 # 资源基础路径
@@ -33,6 +34,7 @@ class AssetManager:
         # 缓存字典
         self.image_cache = {}
         self.font_cache = {}
+        self.json_cache = {}
 
         # 字体路径
         self.font_path = ASSETS_DIR / "fonts" / "NotoSansSC-Regular.otf"
@@ -132,10 +134,15 @@ class AssetManager:
 
     def _load_json(self, filename, error_msg="数据"):
         """通用 JSON 加载方法"""
+        if filename in self.json_cache:
+            return copy.deepcopy(self.json_cache[filename])
+
         file_path = DATA_DIR / filename
         try:
             with open(file_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                self.json_cache[filename] = copy.deepcopy(data)
+                return data
         except Exception as e:
             print(f"[错误] 无法加载{error_msg}: {e}")
         return {}
@@ -164,6 +171,7 @@ class AssetManager:
         """清空缓存"""
         self.image_cache.clear()
         self.font_cache.clear()
+        self.json_cache.clear()
 
     def get_asset_path(self, relative_path: str) -> Path:
         """
