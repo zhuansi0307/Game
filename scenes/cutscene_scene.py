@@ -240,8 +240,12 @@ class CutsceneScene(BaseScene):
         """绘制当前帧"""
         frame_image = self.player.get_current_frame()
         if frame_image:
-            scaled_frame = pygame.transform.smoothscale(frame_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
-            screen.blit(scaled_frame, (0, 0))
+            # Optimize: Only scale if the frame size doesn't match the screen size to save an expensive operation per frame
+            if frame_image.get_size() != (SCREEN_WIDTH, SCREEN_HEIGHT):
+                frame_to_draw = pygame.transform.smoothscale(frame_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+            else:
+                frame_to_draw = frame_image
+            screen.blit(frame_to_draw, (0, 0))
 
     def _draw_dialogue_box(self, screen):
         """绘制对话框"""
