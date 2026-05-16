@@ -1,0 +1,3 @@
+## 2024-05-24 - JSON Cache and Deep Copy in Pygame
+**Learning:** Returning a reference to a cached dictionary in Python can be dangerous if the caller mutates the dictionary. While `json.load()` instantiates a new dictionary every time, caching it requires defensively copying it on read (e.g. `copy.deepcopy()`) to avoid cache poisoning if components mutate it down the line. However, `deepcopy` can be slower than reading the file for very large structures, although avoiding I/O overhead typically compensates for it in typical Pygame JSON usage.
+**Action:** Always consider mutability and use `copy.deepcopy()` (or equivalent read-only data structures) when implementing memory caches for dictionaries/lists.
