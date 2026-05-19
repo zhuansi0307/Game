@@ -170,16 +170,16 @@ class VideoFrameReader:
             self._surface_cache.pop(farthest, None)
 
     def _process_frame(self, frame: np.ndarray) -> np.ndarray:
-        """BGR 帧转 RGB 并缩放到目标尺寸。"""
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        height, width = rgb_frame.shape[:2]
+        """缩放 BGR 帧到目标尺寸，保持 BGR 格式。
+        优化：省略了昂贵的 cv2.cvtColor 操作。"""
+        height, width = frame.shape[:2]
         target_width, target_height = self.target_size
 
         if (width, height) != self.target_size:
             interpolation = cv2.INTER_AREA if width > target_width or height > target_height else cv2.INTER_LINEAR
-            rgb_frame = cv2.resize(rgb_frame, self.target_size, interpolation=interpolation)
+            frame = cv2.resize(frame, self.target_size, interpolation=interpolation)
 
-        return np.ascontiguousarray(rgb_frame)
+        return np.ascontiguousarray(frame)
 
     def get_frame(self, time_seconds: float) -> Optional[pygame.Surface]:
         """获取指定时间的帧，命中缓存时不触发同步解码。"""
@@ -236,9 +236,10 @@ class VideoFrameReader:
         return self._process_frame(frame)
 
     def _frame_to_surface(self, frame: np.ndarray) -> pygame.Surface:
-        """在主线程把 RGB ndarray 转成 pygame Surface。"""
-        surface_array = np.transpose(frame, (1, 0, 2))
-        return pygame.surfarray.make_surface(surface_array)
+        """在主线程把连续的 BGR ndarray 直接映射成 pygame Surface。
+        优化：通过 pygame.image.frombuffer 实现了零拷贝和零转置。"""
+        height, width = frame.shape[:2]
+        return pygame.image.frombuffer(frame.data, (width, height), 'BGR')
 
     def _time_to_frame_index(self, time_seconds: float) -> int:
         """秒数转帧索引。"""

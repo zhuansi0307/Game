@@ -1,0 +1,3 @@
+## 2024-05-19 - Zero-copy OpenCV BGR to Pygame Surface
+**Learning:** Pygame's `surfarray.make_surface` requires (Width, Height, RGB) layout, which forces OpenCV's default (Height, Width, BGR) frames to undergo an expensive `cv2.cvtColor` and `np.transpose`. However, `pygame.image.frombuffer` supports mapping a raw contiguous memory buffer directly using the `'BGR'` format flag, providing a zero-copy mapping.
+**Action:** Use `frame = np.ascontiguousarray(frame)` followed by `pygame.image.frombuffer(frame.data, (width, height), 'BGR')` to eliminate the `cv2.cvtColor` and `np.transpose` bottlenecks entirely when mapping OpenCV frames to Pygame.
