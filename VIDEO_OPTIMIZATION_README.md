@@ -4,7 +4,7 @@
 
 ### 解决的问题
 - **60帧视频卡顿** - 帧率不匹配、性能瓶颈
-- **每帧格式转换开销大** - BGR→RGB + 转置 + 缩放
+- **每帧格式转换开销大** - 避免 BGR→RGB + 转置 带来的拷贝开销
 - **频繁seek性能差** - 跳帧时重新解码
 
 ### 解决方案
@@ -58,9 +58,8 @@ class VideoFrameReader:
 ┌─────────────────────────────────────────┐
 │         后台线程持续执行：                 │
 │  1. 从视频读取原始帧                      │
-│  2. BGR→RGB 色彩转换                     │
-│  3. 数组转置                             │
-│  4. 创建 pygame Surface                  │
+│  2. 保持 BGR 格式 (连续内存)              │
+│  3. pygame.image.frombuffer 零拷贝创建      │
 │  5. 缩放到目标尺寸 (1920x1080)           │
 │  6. 缓存到字典                           │
 │  7. 控制缓存大小（最多60帧）              │
@@ -126,16 +125,13 @@ def get_frame(self, time_seconds):
 ```python
 def _process_frame(self, frame):
     """一次性完成所有预处理"""
-    # 1. 色彩转换
-    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    # 1. 直接从连续的 BGR 数据创建 Surface (零拷贝、零颜色转换)
+    # 通过 pygame.image.frombuffer 实现了最佳性能
+    frame = np.ascontiguousarray(frame)
+    height, width = frame.shape[:2]
+    surface = pygame.image.frombuffer(frame.data, (width, height), 'BGR')
     
-    # 2. 转置
-    rgb_frame = np.transpose(rgb_frame, (1, 0, 2))
-    
-    # 3. 创建Surface
-    surface = pygame.surfarray.make_surface(rgb_frame)
-    
-    # 4. 缩放
+    # 2. 缩放
     surface = pygame.transform.smoothscale(surface, self.target_size)
     
     return surface
@@ -156,9 +152,8 @@ def _process_frame(self, frame):
   每帧都要：
   1. seek定位（慢）
   2. 读取帧
-  3. 色彩转换
-  4. 转置
-  5. 创建Surface
+  3. 内存拷贝 (色彩转换、转置)
+  4. 创建Surface
   6. 缩放
   
 结果：60fps视频在主线程卡成30fps
