@@ -1,0 +1,3 @@
+## 2024-05-09 - Pygame Video Rendering Zero-Copy Optimization
+**Learning:** Pygame's `pygame.image.frombuffer` supports 'BGR' format natively. When rendering OpenCV frames (which are BGR by default), converting to RGB with `cv2.cvtColor`, transposing axes, and using `pygame.surfarray.make_surface` introduces massive memory overhead and CPU usage. Using `frombuffer` with 'BGR' is effectively zero-copy and drastically faster.
+**Action:** Always map OpenCV video frames to Pygame Surfaces directly using `pygame.image.frombuffer(np.ascontiguousarray(frame).data, size, 'BGR')` instead of doing manual color space and axis conversions.
