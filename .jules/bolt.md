@@ -1,0 +1,3 @@
+## 2024-05-22 - Pygame Zero-Copy Rendering
+**Learning:** Pygame's `surfarray.make_surface` with `np.transpose` is a significant performance bottleneck for video rendering due to memory copies. Using `pygame.image.frombuffer(frame.data, size, 'RGB')` with `np.ascontiguousarray` provides a zero-copy fast path. Additionally, `cv2.resize` is faster than `pygame.transform.smoothscale`. Note that Pygame 2.x standard version does NOT support `'BGR'` directly in `frombuffer`, so `cv2.cvtColor` to RGB is still required.
+**Action:** When rendering OpenCV frames to Pygame, always convert to RGB, use `cv2.resize` if scaling is needed, make the array contiguous, and load via `pygame.image.frombuffer(..., 'RGB')`. Avoid `make_surface` and `smoothscale` in render loops.
