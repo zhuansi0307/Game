@@ -1,0 +1,3 @@
+## 2024-05-23 - Zero-copy OpenCV to Pygame rendering
+**Learning:** In Pygame, using `pygame.surfarray.make_surface` and `np.transpose` to render OpenCV frames is an anti-pattern as it causes costly data copies and transpositions. `pygame.image.frombuffer(frame.data, size, 'RGB')` allows a zero-copy mapping of OpenCV (numpy) buffers into Pygame surfaces. Frame resizing is also significantly faster via `cv2.resize` directly on the ndarray before mapping, compared to `pygame.transform.smoothscale`.
+**Action:** Use `pygame.image.frombuffer` combined with contiguous arrays (`np.ascontiguousarray`) instead of `pygame.surfarray.make_surface` for mapping ndarrays to Pygame surfaces. Prefer `cv2.resize` over `pygame.transform.smoothscale` for ndarrays.
