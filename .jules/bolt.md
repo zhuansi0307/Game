@@ -1,0 +1,3 @@
+## 2024-05-14 - Pygame Video Frame Rendering Optimization
+**Learning:** In a Pygame + OpenCV application, using `np.transpose` and `pygame.surfarray.make_surface` to render video frames is an enormous performance bottleneck because it copies the entire image buffer each frame. Furthermore, `pygame.transform.smoothscale` is much slower than OpenCV's native `cv2.resize` using `INTER_AREA` (for downscaling) or `INTER_LINEAR` (for upscaling).
+**Action:** Always use `pygame.image.frombuffer(frame.data, size, 'RGB')` with an `np.ascontiguousarray` to perform a zero-copy transition from OpenCV frames to Pygame surfaces, and prefer OpenCV for any image scaling prior to converting it to a Surface.
