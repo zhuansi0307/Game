@@ -237,8 +237,10 @@ class VideoFrameReader:
 
     def _frame_to_surface(self, frame: np.ndarray) -> pygame.Surface:
         """在主线程把 RGB ndarray 转成 pygame Surface。"""
-        surface_array = np.transpose(frame, (1, 0, 2))
-        return pygame.surfarray.make_surface(surface_array)
+        # ⚡ Bolt Optimization: Use frombuffer for zero-copy surface creation.
+        # This avoids expensive np.transpose and pygame.surfarray.make_surface.
+        # Note: frame is already guaranteed to be contiguous RGB from _process_frame.
+        return pygame.image.frombuffer(frame.data, self.target_size, 'RGB')
 
     def _time_to_frame_index(self, time_seconds: float) -> int:
         """秒数转帧索引。"""
