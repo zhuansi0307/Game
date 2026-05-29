@@ -1,0 +1,3 @@
+## 2024-05-24 - [Zero-copy Surface Mapping from OpenCV to Pygame]
+**Learning:** Calling `np.transpose` and `pygame.surfarray.make_surface` is extremely slow for 1080p frames since it results in memory allocation and copying. Furthermore, `pygame.transform.smoothscale` is much slower than `cv2.resize`.
+**Action:** Always use `cv2.resize` instead of `pygame.transform.smoothscale` when both libraries are available. When converting an OpenCV frame to a Pygame Surface, ensure the frame is contiguous (`np.ascontiguousarray`) and use `pygame.image.frombuffer(frame.data, (width, height), 'RGB')` for zero-copy mapping.

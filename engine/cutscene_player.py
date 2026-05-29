@@ -513,10 +513,12 @@ class CutscenePlayer:
             return self.current_frame_surface
 
         self.last_video_frame_index = target_index
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        surface_array = np.transpose(rgb, (1, 0, 2))
-        surface = pygame.surfarray.make_surface(surface_array)
-        self.current_frame_surface = pygame.transform.smoothscale(surface, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        # ⚡ Bolt Optimization: Resize via OpenCV (faster) and use zero-copy frombuffer
+        # Expected Impact: Eliminates memory allocation/transpose overhead and uses faster resize implementation
+        resized = cv2.resize(frame, (SCREEN_WIDTH, SCREEN_HEIGHT), interpolation=cv2.INTER_LINEAR)
+        rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
+        contiguous_rgb = np.ascontiguousarray(rgb)
+        self.current_frame_surface = pygame.image.frombuffer(contiguous_rgb.data, (SCREEN_WIDTH, SCREEN_HEIGHT), 'RGB')
         return self.current_frame_surface
 
     def get_current_dialogue(self) -> Optional[Dict]:
