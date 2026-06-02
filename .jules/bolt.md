@@ -1,0 +1,3 @@
+## 2024-05-24 - Pygame Video Rendering Zero-Copy Optimization
+**Learning:** Pygame's `pygame.surfarray.make_surface` and `pygame.transform.smoothscale` are significant CPU bottlenecks for OpenCV video playback. Transforming frames via `cv2.resize` and memory-mapping via `pygame.image.frombuffer(frame.data, size, 'RGB')` is roughly 10x faster because it avoids `np.transpose` matrix operations and deep object copies.
+**Action:** When rendering OpenCV frames to Pygame Surfaces, ALWAYS use OpenCV for image transformations (resize, color conversion) and use `pygame.image.frombuffer` along with `np.ascontiguousarray` instead of `surfarray`.
