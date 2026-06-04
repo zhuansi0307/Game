@@ -1,0 +1,3 @@
+## 2024-05-24 - Pygame Video Rendering Zero-Copy Optimization
+**Learning:** `pygame.surfarray.make_surface` + `pygame.transform.smoothscale` is a massive bottleneck for Pygame 60fps video playback because it does deep copies and handles arrays transposed (width, height, channels). However, Pygame surfaces natively support row-major layout via `pygame.image.frombuffer(frame.data, size, 'RGB')`. Bypassing the transposes and leveraging `cv2.resize` on the underlying `ndarray` directly allows an instant zero-copy frame update that drastically cuts down latency.
+**Action:** Always prefer `pygame.image.frombuffer` on `np.ascontiguousarray()` blocks with pre-scaled `cv2` arrays instead of using `pygame.transform` and `surfarray` on video frames.
