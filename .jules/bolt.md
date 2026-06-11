@@ -1,0 +1,3 @@
+## 2026-06-11 - [Zero-Copy Frame Rendering]
+**Learning:** In Pygame, converting OpenCV frames using `np.transpose` and `pygame.surfarray.make_surface` is extremely slow and memory-intensive because it creates full memory copies. `pygame.image.frombuffer(frame.data, (width, height), 'RGB')` allows zero-copy mapping. Additionally, `cv2.resize` on ndarrays is significantly faster than `pygame.transform.smoothscale` on Surfaces.
+**Action:** Always prefer `pygame.image.frombuffer` with `(width, height)` tuple for ndarray-to-Surface conversions, ensuring RGB format and contiguous arrays. Apply resizing via `cv2.resize` before Surface creation.
