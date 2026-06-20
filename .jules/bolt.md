@@ -1,0 +1,3 @@
+## 2024-06-20 - [Pygame Surface Initialization Optimization]
+**Learning:** Initializing Pygame surfaces from OpenCV frames using `np.transpose` and `pygame.surfarray.make_surface` creates expensive memory copies and overhead, acting as a bottleneck in video rendering loops.
+**Action:** Use `pygame.image.frombuffer(frame.data, (width, height), 'RGB')` directly on properly formatted contiguous arrays to achieve zero-copy mapping and improve rendering performance.
