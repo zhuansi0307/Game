@@ -1,0 +1,4 @@
+## 2025-03-09 - [Video Frame Conversion Optimization]
+**Learning:** In Pygame, converting an OpenCV video frame to a Pygame Surface is significantly faster using `pygame.image.frombuffer` directly with RGB data instead of `np.transpose` and `pygame.surfarray.make_surface`. For `make_surface`, you have to transpose the array from `(height, width, channels)` to `(width, height, channels)` which is very slow. Instead, use `cv2.resize` to handle resizing, `cv2.cvtColor` for RGB, ensure contiguous memory with `np.ascontiguousarray`, and pass to `pygame.image.frombuffer(rgb.data, (width, height), 'RGB')`. This gives a ~10x speedup (0.2s vs 2.5s for 100 frames).
+
+**Action:** Replace `np.transpose` and `pygame.surfarray.make_surface` with `pygame.image.frombuffer` in `engine/video_frame_reader.py` and `engine/cutscene_player.py`. Also prefer using `cv2.resize` instead of `pygame.transform.smoothscale`.
