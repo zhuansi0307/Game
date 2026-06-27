@@ -1,0 +1,3 @@
+## 2025-02-28 - [Pygame Video Frame Optimization]
+**Learning:** `pygame.surfarray.make_surface` coupled with `np.transpose` is a significant CPU bottleneck when rendering 60fps video frames. `pygame.transform.smoothscale` is also sub-optimal for frame resizing compared to native `cv2.resize`.
+**Action:** When mapping OpenCV frames to Pygame Surfaces, always use `pygame.image.frombuffer(frame.data, (width, height), 'RGB')` with a contiguous array (`np.ascontiguousarray`) to achieve zero-copy transfer, and utilize `cv2.resize` for scaling. Ensure the Pygame size tuple is passed as `(width, height)`.
