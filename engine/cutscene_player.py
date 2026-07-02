@@ -513,10 +513,17 @@ class CutscenePlayer:
             return self.current_frame_surface
 
         self.last_video_frame_index = target_index
+
+        # 优化: 先用 OpenCV 缩放再转码, 并使用 frombuffer 避免开销
+        height, width = frame.shape[:2]
+        if (width, height) != (SCREEN_WIDTH, SCREEN_HEIGHT):
+            interpolation = cv2.INTER_AREA if width > SCREEN_WIDTH or height > SCREEN_HEIGHT else cv2.INTER_LINEAR
+            frame = cv2.resize(frame, (SCREEN_WIDTH, SCREEN_HEIGHT), interpolation=interpolation)
+
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        surface_array = np.transpose(rgb, (1, 0, 2))
-        surface = pygame.surfarray.make_surface(surface_array)
-        self.current_frame_surface = pygame.transform.smoothscale(surface, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        rgb = np.ascontiguousarray(rgb)
+
+        self.current_frame_surface = pygame.image.frombuffer(rgb.data, (SCREEN_WIDTH, SCREEN_HEIGHT), 'RGB')
         return self.current_frame_surface
 
     def get_current_dialogue(self) -> Optional[Dict]:
