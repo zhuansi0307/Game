@@ -1,0 +1,3 @@
+## 2024-07-03 - Pygame Image Rendering Optimization
+**Learning:** `np.transpose` combined with `pygame.surfarray.make_surface` and `pygame.transform.smoothscale` is significantly slower (up to 40x in some benchmarks) than directly resizing with `cv2.resize`, ensuring the array is contiguous (`np.ascontiguousarray`), and using `pygame.image.frombuffer(rgb.data, (width, height), 'RGB')`.
+**Action:** Replace all instances of `pygame.surfarray.make_surface` + `pygame.transform.smoothscale` for video frame processing with `pygame.image.frombuffer` where Pygame version supports it (Pygame >= 2.x supports RGB).
