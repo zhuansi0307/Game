@@ -129,14 +129,15 @@ def _process_frame(self, frame):
     # 1. 色彩转换
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
-    # 2. 转置
-    rgb_frame = np.transpose(rgb_frame, (1, 0, 2))
+    # 2. 缩放 (使用OpenCV直接缩放比pygame.transform更快)
+    if rgb_frame.shape[1::-1] != self.target_size:
+        rgb_frame = cv2.resize(rgb_frame, self.target_size, interpolation=cv2.INTER_LINEAR)
+
+    # 3. 确保数组连续
+    rgb_frame = np.ascontiguousarray(rgb_frame)
     
-    # 3. 创建Surface
-    surface = pygame.surfarray.make_surface(rgb_frame)
-    
-    # 4. 缩放
-    surface = pygame.transform.smoothscale(surface, self.target_size)
+    # 4. 创建Surface (使用zero-copy buffer，避免耗时的np.transpose)
+    surface = pygame.image.frombuffer(rgb_frame.data, self.target_size, 'RGB')
     
     return surface
 ```
