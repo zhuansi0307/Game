@@ -1,0 +1,4 @@
+💡 What: Replaced `np.transpose` and `pygame.transform.smoothscale`/`pygame.surfarray.make_surface` with zero-copy `pygame.image.frombuffer` and `cv2.resize`.
+🎯 Why: Pygame's `make_surface` and `smoothscale` are very slow for 1080p video frames because they run sequentially on CPU and create deep copies. `frombuffer` points directly to OpenCV's contiguous memory arrays without allocation.
+📊 Impact: Considerably faster video playback frame rates and lower CPU usage during cutscenes because memory copies and single-threaded CPU scaling are eliminated.
+🔬 Measurement: Verify by playing an in-game cutscene to ensure smoother rendering and no visual artifacts. Ensure there are no regressions in memory scaling.
