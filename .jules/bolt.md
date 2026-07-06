@@ -1,0 +1,3 @@
+## 2024-07-06 - Pygame Image Buffer Fast Path
+**Learning:** Pygame's `surfarray.make_surface` + `np.transpose` is slow for 1080p frames and causes memory allocations. The zero-copy alternative `pygame.image.frombuffer(frame.data, (width, height), 'RGB')` is extremely fast. However, you MUST make sure the underlying numpy array is C-contiguous using `np.ascontiguousarray` if modified (which is already being done in `_process_frame` here, but need to be careful). Additionally, Pygame requires the dimensions as `(width, height)`, unlike NumPy which is usually `(height, width)`.
+**Action:** Use `pygame.image.frombuffer` for Pygame + OpenCV video playback optimizations.
