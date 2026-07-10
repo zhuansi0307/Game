@@ -1,0 +1,3 @@
+## 2024-03-24 - [Optimize Video Frame Rendering]
+**Learning:** Pygame `surfarray.make_surface` combined with `np.transpose` is significantly slower than zero-copy approach for rendering video frames, especially since Pygame doesn't support BGR out of the box. Additionally, `pygame.transform.smoothscale` is much slower than `cv2.resize` when applying scale to ndarray images.
+**Action:** When implementing Pygame + OpenCV rendering, ensure frames are resized via `cv2.resize`, converted to continuous block (`np.ascontiguousarray`), and then fed into `pygame.image.frombuffer(data, (width, height), 'RGB')` to bypass costly array transposition.
