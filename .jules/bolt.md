@@ -1,0 +1,4 @@
+
+## 2023-11-20 - [Zero-Copy Frame Processing Optimization]
+**Learning:** Pygame `surfarray.make_surface` coupled with `np.transpose` is highly inefficient for frequent frame updates (like video decoding). Pygame 2.x supports `pygame.image.frombuffer` which avoids copying data and transposing, making frame updates significantly faster. OpenCV `cv2.resize` is also generally faster than `pygame.transform.smoothscale`. Note that the size parameter for `frombuffer` expects `(width, height)`.
+**Action:** Whenever decoding video frames (like OpenCV) to a Pygame Surface in performance-critical paths, use `pygame.image.frombuffer(frame.data, (width, height), 'RGB')` instead of `np.transpose` and `pygame.surfarray.make_surface`. Ensure the frame is contiguous using `np.ascontiguousarray` if modified (e.g. after resizing).

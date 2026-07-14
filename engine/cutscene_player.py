@@ -514,9 +514,12 @@ class CutscenePlayer:
 
         self.last_video_frame_index = target_index
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        surface_array = np.transpose(rgb, (1, 0, 2))
-        surface = pygame.surfarray.make_surface(surface_array)
-        self.current_frame_surface = pygame.transform.smoothscale(surface, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        # 使用 cv2.resize 直接缩放 ndarray 效率更高
+        resized = cv2.resize(rgb, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        # 确保数据连续
+        resized = np.ascontiguousarray(resized)
+        # 零拷贝转换为 pygame surface
+        self.current_frame_surface = pygame.image.frombuffer(resized.data, (SCREEN_WIDTH, SCREEN_HEIGHT), 'RGB')
         return self.current_frame_surface
 
     def get_current_dialogue(self) -> Optional[Dict]:
