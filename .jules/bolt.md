@@ -1,0 +1,3 @@
+## 2024-05-24 - Zero-copy Pygame Video Frame Conversion
+**Learning:** Pygame's `surfarray.make_surface` coupled with `np.transpose` is highly inefficient for mapping OpenCV frames into Pygame. OpenCV frames are BGR ndarrays.
+**Action:** Use `cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)`, ensure it's contiguous via `np.ascontiguousarray`, and pass the raw data directly to `pygame.image.frombuffer(rgb.data, (width, height), 'RGB')`. Note that Pygame uses `(width, height)` rather than numpy's `(height, width)`. This saves a massive amount of allocation and copy overhead per frame. Also prefer `cv2.resize` over `pygame.transform.smoothscale`.
