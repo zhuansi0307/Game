@@ -1,0 +1,3 @@
+## 2024-07-22 - Video Frame Conversion Zero-Copy Optimization
+**Learning:** In a Pygame + OpenCV environment, converting OpenCV frames (NumPy arrays) to Pygame Surfaces using `pygame.surfarray.make_surface` and `np.transpose` creates a significant bottleneck due to unnecessary memory copying and array manipulation.
+**Action:** Always use `pygame.image.frombuffer(frame.data, (width, height), 'RGB')` to map OpenCV frames to Pygame Surfaces. Before mapping, convert to RGB, optionally use `cv2.resize` (faster than `pygame.transform.smoothscale`), and ensure the array is contiguous using `np.ascontiguousarray()`. Remember that `frombuffer` expects `(width, height)` instead of NumPy's `(height, width)`.
