@@ -1,0 +1,3 @@
+## 2024-05-19 - [Video Frame Pygame Mapping Optimization]
+**Learning:** Pygame + OpenCV video frame rendering requires mapping OpenCV frames (ndarrays) to Pygame Surfaces. Using `np.transpose` followed by `pygame.surfarray.make_surface` is slow due to heavy memory copying. A zero-copy approach using `pygame.image.frombuffer(frame.data, (frame.shape[1], frame.shape[0]), 'RGB')` is much faster and avoids expensive intermediate arrays.
+**Action:** Replace `np.transpose` and `pygame.surfarray.make_surface` with `pygame.image.frombuffer(frame.data, (frame.shape[1], frame.shape[0]), 'RGB')`. Always ensure the ndarray is contiguous using `np.ascontiguousarray` before passing it to `frombuffer`. Pygame 2.x doesn't support 'BGR' directly, so frames must be in RGB.
