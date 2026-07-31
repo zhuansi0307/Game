@@ -1,0 +1,3 @@
+## 2025-07-31 - Zero-copy Pygame Surface Creation from OpenCV
+**Learning:** In Pygame, `pygame.surfarray.make_surface` combined with `np.transpose` is highly inefficient and creates expensive memory copies.
+**Action:** Replace `np.transpose(rgb, (1, 0, 2))` and `pygame.surfarray.make_surface()` with a zero-copy approach: ensure the array is contiguous and use `pygame.image.frombuffer(rgb.data, (width, height), 'RGB')`. This applies to both `engine/video_frame_reader.py` and `engine/cutscene_player.py`. Also, it's faster to use `cv2.resize` on the numpy array instead of `pygame.transform.smoothscale` on the surface for the fallback video player in `cutscene_player.py`.
