@@ -1,0 +1,3 @@
+## 2024-05-18 - Optimize OpenCV to Pygame Surface Conversion
+**Learning:** Using `pygame.surfarray.make_surface` requires an expensive `np.transpose(frame, (1, 0, 2))` operation, which significantly slows down video frame rendering. The zero-copy `pygame.image.frombuffer` is orders of magnitude faster.
+**Action:** Use `pygame.image.frombuffer(frame.data, (frame.shape[1], frame.shape[0]), 'RGB')` to map OpenCV frames to Pygame Surfaces. Ensure the frame is converted to RGB and is contiguous (`np.ascontiguousarray`) before calling `frombuffer`. For resizing, prefer `cv2.resize` directly on the ndarray before color conversion rather than `pygame.transform.smoothscale`.
