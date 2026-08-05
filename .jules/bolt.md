@@ -1,0 +1,3 @@
+## 2026-08-05 - [Optimize Video Surface Allocation]
+**Learning:** Pygame `pygame.surfarray.make_surface` combined with `np.transpose` creates significant overhead when rendering frames from OpenCV due to new buffer allocation and large array copying operations on every frame. Additionally, converting color space on unscaled frames causes unnecessary performance drag during downsizing operations.
+**Action:** When implementing OpenCV video playback in Pygame, use `pygame.image.frombuffer(rgb_contiguous.data, (width, height), 'RGB')` for zero-copy surface mapping. Further, run `cv2.resize` *before* `cv2.cvtColor` to reduce the amount of pixel data processed during color conversion, taking care to use `np.ascontiguousarray()` prior to `frombuffer`.
