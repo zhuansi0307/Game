@@ -1,0 +1,3 @@
+## 2024-08-07 - [Optimize OpenCV to Pygame Surface Conversion]
+**Learning:** In Pygame, converting an OpenCV video frame (`np.ndarray` with BGR format and shape `(H, W, C)`) to a Pygame Surface using `np.transpose` and `pygame.surfarray.make_surface()` is incredibly slow, and resizing the resulting Surface via `pygame.transform.smoothscale()` makes it even worse.
+**Action:** Use `cv2.resize()` directly on the `ndarray` (before color conversion for extra efficiency), then convert color using `cv2.cvtColor`, make it contiguous with `np.ascontiguousarray()`, and finally use the zero-copy approach `pygame.image.frombuffer(rgb.data, (width, height), 'RGB')` to map the array to a Surface. This approach yields a massive (~45x) performance boost.
