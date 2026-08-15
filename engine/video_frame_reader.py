@@ -170,15 +170,17 @@ class VideoFrameReader:
             self._surface_cache.pop(farthest, None)
 
     def _process_frame(self, frame: np.ndarray) -> np.ndarray:
-        """BGR 帧转 RGB 并缩放到目标尺寸。"""
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        height, width = rgb_frame.shape[:2]
+        """BGR 帧缩放到目标尺寸并转 RGB。"""
+        # ⚡ Bolt Optimization: Use cv2.resize before cvtColor (faster)
+        height, width = frame.shape[:2]
         target_width, target_height = self.target_size
 
+        resized_frame = frame
         if (width, height) != self.target_size:
             interpolation = cv2.INTER_AREA if width > target_width or height > target_height else cv2.INTER_LINEAR
-            rgb_frame = cv2.resize(rgb_frame, self.target_size, interpolation=interpolation)
+            resized_frame = cv2.resize(frame, self.target_size, interpolation=interpolation)
 
+        rgb_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
         return np.ascontiguousarray(rgb_frame)
 
     def get_frame(self, time_seconds: float) -> Optional[pygame.Surface]:
@@ -237,8 +239,10 @@ class VideoFrameReader:
 
     def _frame_to_surface(self, frame: np.ndarray) -> pygame.Surface:
         """在主线程把 RGB ndarray 转成 pygame Surface。"""
-        surface_array = np.transpose(frame, (1, 0, 2))
-        return pygame.surfarray.make_surface(surface_array)
+        # ⚡ Bolt Optimization: Avoid np.transpose + make_surface.
+        # This reduces video frame surface creation time significantly by using frombuffer.
+        height, width = frame.shape[:2]
+        return pygame.image.frombuffer(frame.data, (width, height), 'RGB')
 
     def _time_to_frame_index(self, time_seconds: float) -> int:
         """秒数转帧索引。"""
