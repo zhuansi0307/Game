@@ -1,0 +1,4 @@
+
+## 2024-05-18 - [Zero-Copy Frame Surface Conversion]
+**Learning:** In Pygame, constructing a surface using `pygame.surfarray.make_surface` and `np.transpose` creates large bottlenecks for high FPS operations, as they create copies of arrays in memory. Replacing `make_surface` + `transpose` with `pygame.image.frombuffer(frame.data, target_size, 'RGB')` allows zero-copy surface mapping which can reduce overhead from seconds per 1000 iter down to milliseconds. Note that when applying this, any prior CV scaling is best done before color conversion (`cv2.cvtColor`) rather than running `pygame.transform.smoothscale`.
+**Action:** When working on frame conversions from OpenCV to Pygame Surfaces, use `cv2.resize` (prior to BGR2RGB conversion) combined with `np.ascontiguousarray` and `pygame.image.frombuffer` instead of transposing/transforming on Pygame surfaces.
