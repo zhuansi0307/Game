@@ -237,8 +237,8 @@ class VideoFrameReader:
 
     def _frame_to_surface(self, frame: np.ndarray) -> pygame.Surface:
         """在主线程把 RGB ndarray 转成 pygame Surface。"""
-        surface_array = np.transpose(frame, (1, 0, 2))
-        return pygame.surfarray.make_surface(surface_array)
+        # 优化：使用 frombuffer 避免昂贵的转置和 make_surface 操作
+        return pygame.image.frombuffer(frame.data, (frame.shape[1], frame.shape[0]), 'RGB')
 
     def _time_to_frame_index(self, time_seconds: float) -> int:
         """秒数转帧索引。"""
