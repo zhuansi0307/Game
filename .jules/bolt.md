@@ -1,0 +1,3 @@
+## 2024-05-24 - Pygame Video Frame Optimization
+**Learning:** `np.transpose` combined with `pygame.surfarray.make_surface` and `pygame.transform.smoothscale` is a massive performance bottleneck for mapping OpenCV video frames to Pygame Surfaces, especially for high-resolution video like 4K.
+**Action:** Use zero-copy buffer approach `pygame.image.frombuffer(frame.data, (frame.shape[1], frame.shape[0]), 'RGB')`. Furthermore, to handle resizing, apply `cv2.resize` directly on the BGR `ndarray` *before* `cv2.cvtColor` color conversion to RGB for maximum efficiency. Ensure arrays are contiguous using `np.ascontiguousarray` before passing to `frombuffer`.
