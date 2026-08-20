@@ -1,0 +1,3 @@
+## 2024-06-25 - [Optimize Pygame Video Frame Surface Conversion]
+ **Learning:** In Pygame 2.x, converting video frames (numpy arrays) to Pygame Surfaces using `np.transpose` and `pygame.surfarray.make_surface` is highly inefficient and creates significant overhead due to memory copying and transposing. `pygame.image.frombuffer` on a contiguous array is essentially zero-copy and orders of magnitude faster (e.g. from 9ms down to 0ms). Similarly, scaling using OpenCV `cv2.resize` on the `ndarray` prior to conversion is substantially faster than `pygame.transform.smoothscale`.
+ **Action:** For performance-critical frame rendering, ensure frames are contiguous RGB `ndarray`s and use `pygame.image.frombuffer(frame.data, (frame.shape[1], frame.shape[0]), 'RGB')`.
