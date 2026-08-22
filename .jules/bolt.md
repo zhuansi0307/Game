@@ -1,0 +1,3 @@
+## 2025-02-23 - [Pygame + OpenCV Video Frame Optimization]
+**Learning:** `pygame.surfarray.make_surface` coupled with `np.transpose` is excessively slow for continuous video playback frames and severely bottlenecks Pygame playback. Also, Pygame `smoothscale` is much slower than OpenCV `resize`.
+**Action:** Use zero-copy `pygame.image.frombuffer(frame.data, (frame.shape[1], frame.shape[0]), 'RGB')` to map contiguous RGB numpy arrays to Pygame surfaces. Use `cv2.resize` directly on the original BGR numpy array BEFORE `cv2.cvtColor` color conversion to minimize data overhead. Always ensure arrays are C-contiguous (`np.ascontiguousarray`) before calling `frombuffer`.
