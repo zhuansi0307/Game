@@ -1,0 +1,3 @@
+## 2025-02-23 - Fast Pygame Surface Creation from OpenCV
+**Learning:** Pygame's `surfarray.make_surface` and `pygame.transform.smoothscale` are quite slow compared to `cv2.resize` and `pygame.image.frombuffer`. In the benchmark, the `surfarray` method + `smoothscale` took ~1.85s, while `cv2.resize` + `frombuffer` took ~0.70s. Without scaling, `surfarray` was ~1.69s and `frombuffer` was ~0.03s.
+**Action:** Use `pygame.image.frombuffer(rgb.data, (rgb.shape[1], rgb.shape[0]), 'RGB')` for zero-copy OpenCV to Pygame conversion. Also prefer `cv2.resize` before color conversion over `pygame.transform.smoothscale`.
