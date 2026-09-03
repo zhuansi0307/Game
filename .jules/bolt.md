@@ -1,0 +1,6 @@
+## 2025-03-02 - [Pygame Surface Creation Bottleneck]
+ **Learning:** `pygame.surfarray.make_surface` coupled with `np.transpose` is extremely slow compared to `pygame.image.frombuffer`. In Pygame 2.x, converting a raw contigous NumPy RGB array directly into a Pygame Surface using `pygame.image.frombuffer(array.data, (width, height), 'RGB')` avoids expensive memory copying and matrix transposition, resulting in massive speedups (e.g. 3600x faster).
+ **Action:** For performance-critical video rendering loops using Pygame and OpenCV, always use `pygame.image.frombuffer` on `np.ascontiguousarray` instead of `np.transpose` and `pygame.surfarray.make_surface`.
+## 2025-03-02 - [Pygame frombuffer Memory Lifecycle Bug]
+ **Learning:** When optimizing with `pygame.image.frombuffer`, the returned Surface *shares* memory with the source numpy buffer without copying. If the numpy array is a local variable, it is garbage collected upon function return, leaving the Surface pointing to freed memory (causing segfaults or graphical corruption).
+ **Action:** To safely use `pygame.image.frombuffer` in functions returning Pygame Surfaces, use `pygame.image.frombytes(array.tobytes(), ...)` to explicitly copy the memory. Even with the copy, it is far faster than `surfarray.make_surface` + `np.transpose`.

@@ -108,9 +108,8 @@ class VideoFrameReader:
 
                 playhead = self._playhead_index
                 ahead = self._count_ahead_locked(playhead)
-                behind = self._count_behind_locked(playhead)
                 total_cached = len(self._frame_cache)
-                
+
                 if ahead >= self.buffer_size or total_cached >= self.buffer_size:
                     needs_wait = True
                 else:
@@ -237,8 +236,11 @@ class VideoFrameReader:
 
     def _frame_to_surface(self, frame: np.ndarray) -> pygame.Surface:
         """在主线程把 RGB ndarray 转成 pygame Surface。"""
-        surface_array = np.transpose(frame, (1, 0, 2))
-        return pygame.surfarray.make_surface(surface_array)
+        # Optimize: Avoid expensive np.transpose and surfarray.make_surface by using frombytes.
+        # We use frombytes (which copies) instead of frombuffer to prevent the garbage collector
+        # from freeing the local numpy array while the surface is still using it.
+        contig_frame = np.ascontiguousarray(frame)
+        return pygame.image.frombytes(contig_frame.tobytes(), (contig_frame.shape[1], contig_frame.shape[0]), 'RGB')
 
     def _time_to_frame_index(self, time_seconds: float) -> int:
         """秒数转帧索引。"""
