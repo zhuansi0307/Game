@@ -1,0 +1,3 @@
+## 2024-05-19 - [Optimize Video Frame Rendering]
+**Learning:** Pygame's `surfarray.make_surface` coupled with `np.transpose` is slower than converting directly from bytes with `pygame.image.frombytes`. Additionally, when processing video frames, it is more performant to perform `cv2.resize` on the original BGR frame *before* applying `cv2.cvtColor`, especially when downscaling, as less data needs to be color converted. Never use `pygame.image.frombuffer` on local numpy arrays as it shares memory and causes use-after-free bugs when garbage collected.
+**Action:** Use `pygame.image.frombytes(array.tobytes(), (width, height), 'RGB')` instead of `np.transpose` + `surfarray.make_surface`. For video frames, always apply `cv2.resize` before `cv2.cvtColor`.
