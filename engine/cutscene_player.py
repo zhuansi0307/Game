@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import cv2
-import numpy as np
 import pygame
 
 from .constants import SCREEN_HEIGHT, SCREEN_WIDTH, COLOR_BG_DARK, COLOR_CHAMPAGNE, COLOR_TEXT
@@ -514,8 +513,8 @@ class CutscenePlayer:
 
         self.last_video_frame_index = target_index
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        surface_array = np.transpose(rgb, (1, 0, 2))
-        surface = pygame.surfarray.make_surface(surface_array)
+        # ⚡ Bolt: Using frombytes instead of transpose + make_surface for performance
+        surface = pygame.image.frombytes(rgb.tobytes(), (rgb.shape[1], rgb.shape[0]), 'RGB')
         self.current_frame_surface = pygame.transform.smoothscale(surface, (SCREEN_WIDTH, SCREEN_HEIGHT))
         return self.current_frame_surface
 
