@@ -1,0 +1,3 @@
+## 2024-05-15 - Fast Video Rendering with Pygame
+**Learning:** In Pygame + OpenCV video frame rendering, converting OpenCV arrays to Pygame surfaces using `np.transpose` and `pygame.surfarray.make_surface` is very slow. Using `pygame.image.frombuffer` directly on a local numpy array can cause a use-after-free vulnerability when the array is garbage collected.
+**Action:** Use `pygame.image.frombytes(array.tobytes(), (width, height), 'RGB')` to safely and quickly copy the memory. Also, prefer using `cv2.resize` directly on the ndarray before color conversion rather than `pygame.transform.smoothscale` for efficient frame resizing.
