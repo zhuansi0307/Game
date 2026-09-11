@@ -1,0 +1,3 @@
+## 2026-09-11 - [Video Frame Processing Optimization]
+**Learning:** Resizing frames before color conversion, and using `pygame.image.frombytes(frame.tobytes(), ...)` instead of `np.transpose` and `pygame.surfarray.make_surface`, drastically improves frame processing performance by reducing the number of pixels processed during color conversion and avoiding expensive array transpositions and pygame smoothscaling.
+**Action:** Always resize before color conversion, and prefer `pygame.image.frombytes` with a `tobytes()` call for converting numpy arrays to pygame surfaces to ensure safety (avoiding use-after-free with frombuffer) while maintaining high performance.

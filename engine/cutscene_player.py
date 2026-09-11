@@ -513,10 +513,17 @@ class CutscenePlayer:
             return self.current_frame_surface
 
         self.last_video_frame_index = target_index
+
+        # [Bolt Optimization] Fast resize before color conversion.
+        height, width = frame.shape[:2]
+        if (width, height) != (SCREEN_WIDTH, SCREEN_HEIGHT):
+            interpolation = cv2.INTER_AREA if width > SCREEN_WIDTH or height > SCREEN_HEIGHT else cv2.INTER_LINEAR
+            frame = cv2.resize(frame, (SCREEN_WIDTH, SCREEN_HEIGHT), interpolation=interpolation)
+
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        surface_array = np.transpose(rgb, (1, 0, 2))
-        surface = pygame.surfarray.make_surface(surface_array)
-        self.current_frame_surface = pygame.transform.smoothscale(surface, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        # [Bolt Optimization] Avoid slow pygame.transform.smoothscale, cv2.cvtColor, np.transpose, and
+        # pygame.surfarray.make_surface pipeline by using pygame.image.frombytes for zero-transpose creation.
+        self.current_frame_surface = pygame.image.frombytes(rgb.tobytes(), (SCREEN_WIDTH, SCREEN_HEIGHT), 'RGB')
         return self.current_frame_surface
 
     def get_current_dialogue(self) -> Optional[Dict]:
