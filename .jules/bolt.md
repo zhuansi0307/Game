@@ -1,0 +1,3 @@
+## 2024-09-13 - [Optimize Video Frame Rendering to Pygame Surfaces]
+**Learning:** For converting OpenCV frames to Pygame surfaces, using `pygame.image.frombuffer` with local numpy arrays causes use-after-free crashes when garbage collected. The optimal approach is avoiding `np.transpose` and `pygame.surfarray.make_surface` altogether by using `pygame.image.frombytes(array.tobytes(), size, 'RGB')`. Additionally, `cv2.resize` on the ndarray before color conversion is substantially faster than using `pygame.transform.smoothscale` on the resulting Pygame surface.
+**Action:** Always prefer `pygame.image.frombytes` over `make_surface` for video frame conversion, and perform resizing operations natively in OpenCV before interacting with Pygame.
