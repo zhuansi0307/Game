@@ -1,0 +1,3 @@
+## 2024-03-20 - Pygame + OpenCV Video Frame Rendering Optimization
+**Learning:** `pygame.surfarray.make_surface` from a local numpy array can cause a use-after-free vulnerability when the array is garbage collected, and requires an expensive `np.transpose`. Also, `pygame.transform.smoothscale` is slower than using `cv2.resize` directly on the numpy ndarray before surface creation.
+**Action:** Always use `cv2.resize` on the numpy array first, convert to RGB, and then use `pygame.image.frombytes(array.tobytes(), (width, height), 'RGB')` to safely copy the memory and create the surface, avoiding transposes and Pygame's slower scaling.
