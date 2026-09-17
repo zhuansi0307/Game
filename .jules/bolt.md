@@ -1,0 +1,3 @@
+## 2025-02-12 - Video Frame Processing Optimization
+**Learning:** Pygame `make_surface` + `np.transpose` is noticeably slower than using `pygame.image.frombytes`. Additionally, when downscaling video frames, resizing the original BGR frame *before* converting it to RGB using `cv2.cvtColor` processes significantly fewer pixels during the color conversion phase, yielding a small performance boost.
+**Action:** Use `frombytes` instead of `make_surface` for Pygame image processing from numpy arrays. When combining `cv2.resize` and `cv2.cvtColor` and downscaling is involved, place `cv2.resize` before `cv2.cvtColor`.
