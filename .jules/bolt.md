@@ -1,0 +1,3 @@
+## 2024-11-20 - [Pygame OpenCV Surface Conversion Optimization]
+**Learning:** Pygame `image.frombytes` is significantly more efficient than combining `np.transpose` and `pygame.surfarray.make_surface` when converting OpenCV BGR frames to Pygame Surfaces, as it avoids use-after-free vulnerabilities and costly memory copies. Additionally, performing `cv2.resize` *before* `cv2.cvtColor` minimizes the number of pixels processed for color conversion, yielding further CPU gains.
+**Action:** When integrating OpenCV video reading into Pygame, prioritize `cv2.resize` on the source BGR frame, then `cv2.cvtColor` to RGB, and finally convert the contiguous array to a surface via `pygame.image.frombytes(rgb.tobytes(), (width, height), 'RGB')`.
