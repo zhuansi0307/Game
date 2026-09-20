@@ -1,0 +1,3 @@
+## 2026-09-20 - [Optimize video frame surface conversion]
+**Learning:** Pygame surface creation using `np.transpose` and `pygame.surfarray.make_surface` on a local numpy array can cause a use-after-free bug and is inefficient. `pygame.image.frombytes` should be used with a safely copied `tobytes()` output directly from the RGB numpy array. Additionally, using `cv2.resize` before converting the color space (BGR to RGB) minimizes overhead.
+**Action:** Replace `pygame.surfarray.make_surface` patterns with `pygame.image.frombytes(array.tobytes(), (width, height), 'RGB')` for direct, safe memory conversion, and prioritize `cv2.resize` over `pygame.transform.smoothscale`.
