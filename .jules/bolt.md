@@ -1,0 +1,3 @@
+## 2024-05-30 - Pygame Video Frame Surface Conversion
+**Learning:** For rendering video frames with OpenCV and Pygame, converting `BGR` to `RGB` and then using `pygame.image.frombytes` turned out to be slower than the existing `make_surface` + `np.transpose` approach for native resolution frames. However, using `cv2.resize` directly on the `ndarray` *before* the color conversion and surface creation is measurably faster than using `pygame.transform.smoothscale` *after* creating the surface.
+**Action:** Always resize frames natively with OpenCV before converting to Pygame surfaces to minimize overhead.
