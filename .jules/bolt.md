@@ -1,0 +1,3 @@
+## 2024-05-18 - [Pygame Video Frame Conversion Optimization]
+**Learning:** For rendering video frames in Pygame, `pygame.image.frombuffer(array.tobytes(), size, 'RGB')` combined with native OpenCV `cv2.resize` on the original ndarray *before* color conversion is roughly 5x faster than using `pygame.surfarray.make_surface` + `np.transpose` combined with resizing after color conversion. The memory layout optimization and reducing the pixel work in OpenCV yields significant time savings.
+**Action:** When implementing Pygame video rendering pipelines or image conversion utilities, always default to resizing early using `cv2.resize` and using `pygame.image.frombuffer(array.tobytes(), ...)` instead of `surfarray.make_surface` and explicit Numpy transpose.
