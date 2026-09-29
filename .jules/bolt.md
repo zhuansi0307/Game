@@ -1,0 +1,3 @@
+## 2025-02-23 - Pygame + OpenCV Frame Conversion Optimization
+**Learning:** Converting OpenCV frames to Pygame surfaces using `pygame.surfarray.make_surface` + `np.transpose` is much slower than using `pygame.image.frombuffer(array.tobytes(), size, 'RGB')` (40ms vs 5ms). In addition, for video frames that need to be scaled down, performing the scaling natively in OpenCV (`cv2.resize`) *before* color conversion and surface creation is vastly faster than doing `pygame.transform.smoothscale` at the end.
+**Action:** Always use OpenCV's native `cv2.resize` to shrink the resolution first, then `cv2.cvtColor`, and finally `pygame.image.frombuffer(array.tobytes(), size, 'RGB')` to create the surface efficiently.
