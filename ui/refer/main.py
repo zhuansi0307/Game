@@ -42,7 +42,7 @@ class InteractiveUIElement:
         self.text = text
         self.rect = pygame.Rect(x - width//2, y - height//2, width, height)
         self.is_title = is_title
-        
+
         # 交互变量
         self.target_rot_x = 0
         self.target_rot_y = 0
@@ -51,14 +51,14 @@ class InteractiveUIElement:
         self.target_scale = 1.0
         self.current_scale = 1.0
         self.is_hovered = False
-        
+
         # 生成并绑定 OpenGL 纹理
         self.texture_id = self.create_texture()
 
     def create_texture(self):
         """用 Pygame 绘制高质量 2D UI，并转换为 OpenGL 纹理"""
         surf = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
-        
+
         # 1. 绘制半透明毛玻璃背景 (Glassmorphism 拟态)
         bg_alpha = 90 if self.is_title else 120
         pygame.draw.rect(surf, (255, 255, 255, bg_alpha), (0, 0, self.rect.width, self.rect.height), border_radius=24)
@@ -70,10 +70,10 @@ class InteractiveUIElement:
             font = pygame.font.SysFont(CHINESE_FONT, 56, bold=True)
             text_color = (244, 114, 182) # 粉色调代替渐变
             sub_font = pygame.font.SysFont(None, 24, bold=True)
-            
+
             text_surf = font.render(self.text, True, text_color)
             sub_surf = sub_font.render("SWEET GIRL PLAN", True, (100, 116, 139))
-            
+
             surf.blit(text_surf, (self.rect.width//2 - text_surf.get_width()//2, 30))
             surf.blit(sub_surf, (self.rect.width//2 - sub_surf.get_width()//2, 100))
         else:
@@ -88,23 +88,23 @@ class InteractiveUIElement:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.rect.width, self.rect.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data)
-        
+
         return tex_id
 
     def update(self, mx, my, mouse_pressed):
         """处理鼠标悬浮、偏转和点击逻辑"""
         self.is_hovered = self.rect.collidepoint(mx, my)
-        
+
         if self.is_hovered:
             # 计算鼠标在元素内部的归一化坐标 (-1 到 1)
             # 等同于 JS 中的 css var(--x) 和 var(--y)
             norm_x = ((mx - self.rect.x) / self.rect.width - 0.5) * 2
             norm_y = ((my - self.rect.y) / self.rect.height - 0.5) * 2
-            
+
             # 最大偏转角度 12 度
             self.target_rot_y = norm_x * 12.0
-            self.target_rot_x = norm_y * -12.0 
-            
+            self.target_rot_x = norm_y * -12.0
+
             self.target_scale = 0.95 if mouse_pressed else 1.05
         else:
             self.target_rot_x = 0
@@ -122,31 +122,31 @@ class InteractiveUIElement:
         w, h = self.rect.width / 2, self.rect.height / 2
 
         glPushMatrix()
-        
+
         # 1. 移动到 UI 元素的中心点
         glTranslatef(cx, cy, 0)
-        
+
         # 2. 应用 3D 变换 (缩放和 XY 轴旋转)
         glScalef(self.current_scale, self.current_scale, 1.0)
         glRotatef(self.current_rot_x, 1, 0, 0) # Rotate X
         glRotatef(self.current_rot_y, 0, 1, 0) # Rotate Y
-        
+
         # 为了明显的 3D 效果，鼠标悬浮时 Z 轴微微抬起
         if self.is_hovered:
             glTranslatef(0, 0, 20)
-            
+
         # 3. 绑定纹理并绘制 Quad
         glColor4f(1, 1, 1, 1)
         glBindTexture(GL_TEXTURE_2D, self.texture_id)
         glEnable(GL_TEXTURE_2D)
-        
+
         glBegin(GL_QUADS)
         glTexCoord2f(0, 1); glVertex3f(-w, -h, 0)
         glTexCoord2f(1, 1); glVertex3f(w, -h, 0)
         glTexCoord2f(1, 0); glVertex3f(w, h, 0)
         glTexCoord2f(0, 0); glVertex3f(-w, h, 0)
         glEnd()
-        
+
         glDisable(GL_TEXTURE_2D)
         glPopMatrix()
 
@@ -175,9 +175,9 @@ def main():
     # 使用正交投影，匹配像素坐标系
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    glOrtho(0, WIDTH, HEIGHT, 0, -1000, 1000) 
+    glOrtho(0, WIDTH, HEIGHT, 0, -1000, 1000)
     glMatrixMode(GL_MODELVIEW)
-    
+
     # 启用 Alpha 透明混合
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -186,7 +186,7 @@ def main():
 
     # --- 实例化 UI 和粒子 ---
     particles = [Particle() for _ in range(25)]
-    
+
     center_x = WIDTH // 2
     ui_elements = [
         InteractiveUIElement("甜妹攻略计划", center_x, 200, 380, 160, is_title=True),
@@ -218,7 +218,7 @@ def main():
         # 1. 绘制背景层
         glDisable(GL_DEPTH_TEST) # 背景不需要深度
         draw_background_gradient()
-        
+
         # 2. 绘制并更新粒子
         for p in particles:
             p.update()
