@@ -28,11 +28,11 @@ class StatusUI:
             return
 
         gs = get_game_state()
-        
+
         # 面板设置
         panel_width = 250
         panel_height = 158
-        
+
         # 如果有多个NPC，高度可以动态增加
         npc_count = len(gs.npc_affections)
         if npc_count > 0:
@@ -40,28 +40,28 @@ class StatusUI:
 
         panel_x = 30
         panel_y = 94
-        
+
         panel_surface = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
         panel_surface.fill((*COLOR_PANEL, 200))
-        pygame.draw.rect(panel_surface, (*COLOR_PANEL_BORDER, 255), 
+        pygame.draw.rect(panel_surface, (*COLOR_PANEL_BORDER, 255),
                          (0, 0, panel_width, panel_height), 1, border_radius=8)
-        
+
         screen.blit(panel_surface, (panel_x, panel_y))
-        
+
         # 绘制标题
         title_surface = self.font_medium.render("角色状态", True, COLOR_CHAMPAGNE)
         screen.blit(title_surface, (panel_x + 15, panel_y + 15))
-        
+
         # 绘制主角属性
         y_offset = panel_y + 50
         intel = gs.get_player_stat("intelligence")
         stam = gs.get_player_stat("stamina")
         money = gs.get_player_stat("money")
-        
+
         stat_surface_intel = self.font_small.render(f"智力: {intel}", True, COLOR_TEXT)
         screen.blit(stat_surface_intel, (panel_x + 20, y_offset))
         y_offset += 30
-        
+
         stat_surface_stam = self.font_small.render(f"体力: {stam}/100", True, COLOR_TEXT)
         screen.blit(stat_surface_stam, (panel_x + 20, y_offset))
         y_offset += 30
@@ -69,7 +69,7 @@ class StatusUI:
         stat_surface_money = self.font_small.render(f"余额: {money}", True, COLOR_TEXT)
         screen.blit(stat_surface_money, (panel_x + 20, y_offset))
         y_offset += 30
-        
+
         # 绘制NPC好感度
         if npc_count > 0:
             pygame.draw.line(screen, COLOR_PANEL_BORDER, (panel_x + 15, y_offset), (panel_x + panel_width - 15, y_offset))
