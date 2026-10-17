@@ -51,10 +51,10 @@ def get_time_order(time_key):
     parts = time_key.split("_")
     if len(parts) != 2:
         return 0
-    
+
     day = WEEKDAY_ORDER.get(parts[0], 0)
     period = TIME_PERIOD_ORDER.get(parts[1], 0)
-    
+
     return day * 4 + period
 
 
@@ -118,10 +118,10 @@ def format_time_display(day_index, period_index, lang="cn"):
     """格式化时间显示"""
     weekdays_cn = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
     periods_cn = ["早上", "中午", "下午", "晚上"]
-    
+
     weekdays_en = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     periods_en = ["Morning", "Noon", "Afternoon", "Evening"]
-    
+
     if lang == "cn":
         return f"{weekdays_cn[day_index]} {periods_cn[period_index]}"
     else:
