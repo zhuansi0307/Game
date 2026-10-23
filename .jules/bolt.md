@@ -1,0 +1,3 @@
+## 2024-05-23 - Pygame Image Conversion Performance
+**Learning:** `pygame.surfarray.make_surface` + `np.transpose` is 10-15x slower than `pygame.image.frombuffer` when converting OpenCV BGR frames to Pygame Surfaces. Also, resizing frames natively with OpenCV *before* color conversion minimizes pixel processing and is measurably faster.
+**Action:** When working with Pygame + OpenCV video frame rendering, always use `pygame.image.frombuffer(array.tobytes(), (width, height), 'RGB')` instead of `pygame.surfarray.make_surface(np.transpose(array, (1, 0, 2)))`. Always resize frames natively with OpenCV before converting color spaces or Pygame surfaces.
