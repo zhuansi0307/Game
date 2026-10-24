@@ -43,14 +43,41 @@ class ImageEmbedderHelper(context: Context) {
     private val square = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
 
-    /** Embeddings of the whole photo plus extra views of it (e.g. the part cut out of its background). */
-    fun embedPhoto(bitmap: Bitmap, views: List<Bitmap>): List<FloatArray> =
-        (listOf(bitmap) + views).map(::embed).filter { it.isNotEmpty() }
+    /**
+     * Library-side embeddings of a reference photo: the part cut out of its background when it
+     * could be found ([cutouts]), otherwise the whole photo. The whole photo is deliberately not
+     * kept alongside a cut-out — it is mostly table/tray and would then "match" background.
+     */
+    fun embedPhoto(bitmap: Bitmap, cutouts: List<Bitmap>): List<FloatArray> =
+        cutouts.ifEmpty { listOf(bitmap) }.map(::embed).filter { it.isNotEmpty() }
+
+    /**
+     * Embedding of a plain grey image. Cut-outs are padded with this grey, and two mostly-grey
+     * crops look alike to the model regardless of the part; removing this direction from every
+     * embedding stops e.g. a piece of cardboard "matching" a fitting.
+     */
+    private val greyDirection: FloatArray? by lazy {
+        rawEmbed(Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888).apply { eraseColor(PAD_COLOR) })
+    }
 
     /** Unit-length embedding (cosine == dot product), or empty if the model is unavailable. */
     @Synchronized
     fun embed(bitmap: Bitmap): FloatArray {
-        val s = session ?: return FloatArray(0)
+        val v = rawEmbed(bitmap) ?: return FloatArray(0)
+        val g = greyDirection ?: return v
+        var dot = 0f
+        for (i in v.indices) dot += v[i] * g[i]
+        for (i in v.indices) v[i] -= dot * g[i]
+        var norm = 0f
+        for (x in v) norm += x * x
+        norm = sqrt(norm)
+        if (norm > 0f) for (i in v.indices) v[i] /= norm
+        return v
+    }
+
+    @Synchronized
+    private fun rawEmbed(bitmap: Bitmap): FloatArray? {
+        val s = session ?: return null
         letterbox(bitmap)
         square.getPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE)
         input.clear()
@@ -64,7 +91,12 @@ class ImageEmbedderHelper(context: Context) {
         OnnxTensor.createTensor(env, input, longArrayOf(1, 3, SIZE.toLong(), SIZE.toLong())).use { tensor ->
             s.run(mapOf(INPUT to tensor)).use { result ->
                 @Suppress("UNCHECKED_CAST")
-                return (result.get(0).value as Array<FloatArray>)[0]
+                val v = (result.get(0).value as Array<FloatArray>)[0]
+                var norm = 0f
+                for (x in v) norm += x * x
+                norm = sqrt(norm)
+                if (norm > 0f) for (i in v.indices) v[i] /= norm
+                return v
             }
         }
     }
@@ -98,7 +130,7 @@ class ImageEmbedderHelper(context: Context) {
         private const val PAD_COLOR = 0xFF7C7468.toInt() // ImageNet mean (124, 116, 104)
 
         /** Bump when the model or cropping changes so stored vectors get recomputed. */
-        const val VERSION = 5
+        const val VERSION = 6
 
         /** Best similarity over all crop pairs. */
         fun bestCosine(a: List<FloatArray>, b: List<FloatArray>): Float {

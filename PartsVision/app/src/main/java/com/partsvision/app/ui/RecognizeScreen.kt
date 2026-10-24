@@ -390,6 +390,11 @@ private fun PileView(state: PileState, onOpenPart: (String) -> Unit, onBack: () 
                 }
             }
         }
+        Text(
+            "提示：零件摊开、少叠压时最准；透明盒子里、紧挨着堆满时容易漏认或认错，可以对着单个零件实时识别。",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         if (result.detections.isEmpty()) {
             Text("没有找到零件库里的零件。确认零件已录入，录入时把零件单独放在桌面上拍，不要拿在手里。")
         }

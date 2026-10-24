@@ -111,11 +111,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Library-side features of a still photo; blocking, call off the main thread. */
     private fun photoEmbeddings(photo: Bitmap): List<FloatArray> {
-        // Besides the whole photo, store the part alone: its box, and its box with the background masked out.
-        val views = runCatching { finder.mainObject(photo) }.getOrNull()?.let { (set, p) ->
-            listOf(ObjectFinder.crop(photo, p.box), finder.maskedCrop(photo, set, p))
+        // The part cut out of its background, matching how live and pile scans cut out candidates.
+        val cutouts = runCatching { finder.mainObject(photo) }.getOrNull()?.let { (set, p) ->
+            listOf(finder.maskedCrop(photo, set, p))
         }.orEmpty()
-        return embedder.embedPhoto(photo, views)
+        return embedder.embedPhoto(photo, cutouts)
     }
 
     suspend fun decode(uri: Uri): Bitmap? = withContext(Dispatchers.IO) { ImageUtils.decode(getApplication(), uri) }

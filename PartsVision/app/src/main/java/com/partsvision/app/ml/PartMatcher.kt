@@ -26,16 +26,17 @@ data class MatchResult(
 /**
  * Thresholds on DINOv2 cosine similarity and a mapping to an intuitive confidence.
  *
- * Measured on a real pile photo with masked crops: the same part scores ~0.55–0.95, similar-looking
- * but different fittings and dark background patches ~0.40–0.48, unrelated objects < 0.3. Because similar parts sit close, a match
+ * Measured on two real photos of fittings on a floor and in trays (cut-outs, grey direction
+ * removed, one reference photo per part taken from the other photo): the same part scores
+ * ~0.54–0.94, other fittings, tray compartments and cardboard mostly 0.30–0.48. Because similar parts sit close, a match
  * is only called confident when it also beats the next library part by [MARGIN].
  */
 object Calibration {
-    const val MAYBE = 0.46f
-    const val CONFIDENT = 0.53f
+    const val MAYBE = 0.50f
+    const val CONFIDENT = 0.56f
     const val MARGIN = 0.05f
-    private const val MIDPOINT = 0.46f
-    private const val SLOPE = 0.05f
+    private const val MIDPOINT = 0.50f
+    private const val SLOPE = 0.04f
 
     fun confidence(cosine: Float): Float = 1f / (1f + kotlin.math.exp(-(cosine - MIDPOINT) / SLOPE))
 

@@ -32,7 +32,7 @@ class PileScanner(private val embedder: ImageEmbedderHelper, private val finder:
 
     fun scan(frame: Bitmap, library: List<Part>, onProgress: (Float) -> Unit): PileResult {
         val start = System.currentTimeMillis()
-        val set = finder.propose(frame, minScore = 0.15f, nmsIou = 0.65f, maxCount = MAX_PROPOSALS, maxArea = 0.3f)
+        val set = finder.propose(frame, minScore = 0.15f, nmsIou = 0.65f, maxCount = MAX_PROPOSALS, maxArea = 0.12f)
         val singles = set.proposals
         val total = singles.size + MAX_MERGES
         var done = 0
@@ -56,7 +56,7 @@ class PileScanner(private val embedder: ImageEmbedderHelper, private val finder:
             if (a.best >= Calibration.CONFIDENT && b.best >= Calibration.CONFIDENT) continue
             if (!touching(a.proposal.box, b.proposal.box)) continue
             val u = a.proposal.union(b.proposal)
-            if (u.area > 3 * maxOf(a.proposal.area, b.proposal.area) || u.area > frameArea * 0.3f) continue
+            if (u.area > 3 * maxOf(a.proposal.area, b.proposal.area) || u.area > frameArea * 0.12f) continue
             merges += u to (a.best + b.best)
         }
         merges.sortedByDescending { it.second }.take(MAX_MERGES).forEach { (u, _) -> scored += score(u) }
