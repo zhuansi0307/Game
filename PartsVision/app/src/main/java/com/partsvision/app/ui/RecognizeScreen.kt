@@ -201,7 +201,7 @@ private fun DetectedPart.label(ai: AiVerdict?): String {
     return if (ai != null && ai.partNumber.isNotBlank() && !confident) "$local · AI:${ai.partNumber}" else local
 }
 
-private fun percent(c: LiveCandidate) = if (c.match.isTextHit) "文字" else "${(c.smoothedScore * 100).toInt()}%"
+private fun percent(c: LiveCandidate) = if (c.match.isTextHit) "文字" else "${(c.confidence * 100).toInt()}%"
 
 /** Boxes and labels over the preview; maps frame pixels onto the FILL_CENTER-scaled preview. */
 @Composable
@@ -310,7 +310,7 @@ private fun DetectionList(
 }
 
 private fun scoreText(c: LiveCandidate): String =
-    if (c.match.isTextHit) "文字匹配 ${c.match.matchedText}" else "外观相似 ${(c.smoothedScore * 100).toInt()}%"
+    if (c.match.isTextHit) "文字匹配 ${c.match.matchedText}" else "外观匹配 ${(c.confidence * 100).toInt()}%"
 
 /** Detailed results for a captured frame or a gallery photo. */
 @Composable
@@ -437,7 +437,7 @@ private fun MatchRow(m: MatchResult, onClick: () -> Unit) {
                 if (m.part.name.isNotBlank()) Text(m.part.name, style = MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (m.isTextHit) AssistChip(onClick = onClick, label = { Text("文字匹配 ${m.matchedText}") })
-                    AssistChip(onClick = onClick, label = { Text("外观 ${(m.imageScore * 100).toInt()}%") })
+                    AssistChip(onClick = onClick, label = { Text("外观 ${(m.imageConfidence * 100).toInt()}%") })
                 }
             }
             Text("${(m.score * 100).toInt()}%", style = MaterialTheme.typography.titleMedium)

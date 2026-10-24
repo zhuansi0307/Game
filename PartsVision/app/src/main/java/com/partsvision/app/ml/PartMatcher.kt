@@ -10,14 +10,30 @@ data class MatchResult(
     val textScore: Float,
     val matchedText: String?,
 ) {
+    /** Appearance similarity mapped to a 0..1 "how sure" value, see [Calibration]. */
+    val imageConfidence: Float get() = Calibration.confidence(imageScore)
+
     /** A confident text hit outranks appearance alone; otherwise rank by appearance. */
-    val score: Float get() = if (textScore >= TEXT_HIT) maxOf(textScore, imageScore) else imageScore
+    val score: Float get() = if (textScore >= TEXT_HIT) maxOf(textScore, imageConfidence) else imageConfidence
 
     val isTextHit: Boolean get() = textScore >= TEXT_HIT
 
     companion object {
         const val TEXT_HIT = 0.8f
     }
+}
+
+/**
+ * Maps DINOv2 cosine similarity to an intuitive confidence. Raw cosine for the same part in a
+ * new environment is typically 0.4–0.7 and for unrelated objects below ~0.3, so showing it
+ * directly makes a correct match look like "56%". Midpoint and slope come from the synthetic
+ * environment-change test (best same/other split at ~0.34).
+ */
+object Calibration {
+    private const val MIDPOINT = 0.34f
+    private const val SLOPE = 0.04f
+
+    fun confidence(cosine: Float): Float = 1f / (1f + kotlin.math.exp(-(cosine - MIDPOINT) / SLOPE))
 }
 
 object PartMatcher {

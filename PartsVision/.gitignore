@@ -7,3 +7,4 @@ local.properties
 captures/
 # Downloaded at build time by the downloadModels task
 app/src/main/assets/*.tflite
+app/src/main/assets/*.onnx

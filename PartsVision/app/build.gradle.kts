@@ -14,8 +14,11 @@ android {
         applicationId = "com.partsvision.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
+
+        // Real phones only: drops the x86 copies of every native library (much smaller APK).
+        ndk { abiFilters += setOf("arm64-v8a", "armeabi-v7a") }
     }
 
     buildTypes {
@@ -36,7 +39,7 @@ android {
         compose = true
     }
     androidResources {
-        noCompress += "tflite"
+        noCompress += "onnx"
     }
     packaging {
         resources {
@@ -48,14 +51,15 @@ android {
     }
 }
 
-// On-device image embedding model (MobileNetV3-Large, ~11 MB), fetched once into assets.
+// On-device image embedding model (DINOv2-small int8, ~24 MB), fetched once into assets.
+// Produced by tools/export_dinov2.py via the "PartsVision embedding model" workflow.
 val downloadModels by tasks.registering {
-    val target = file("src/main/assets/mobilenet_v3_large.tflite")
+    val target = file("src/main/assets/dinov2_small_int8.onnx")
     outputs.file(target)
     doLast {
         if (!target.exists()) {
             target.parentFile.mkdirs()
-            URI("https://storage.googleapis.com/mediapipe-models/image_embedder/mobilenet_v3_large/float32/1/mobilenet_v3_large.tflite")
+            URI("https://github.com/zhuansi0307/Game/releases/download/model-dinov2s-v1/dinov2_small_int8.onnx")
                 .toURL().openStream().use { input -> target.outputStream().use { input.copyTo(it) } }
         }
     }
@@ -85,7 +89,7 @@ dependencies {
     implementation("androidx.camera:camera-view:1.4.1")
 
     // On-device recognition: object boxes, image similarity, OCR of stamped/printed part numbers
-    implementation("com.google.mediapipe:tasks-vision:0.10.14")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
     implementation("com.google.mlkit:text-recognition:16.0.1")
     implementation("com.google.mlkit:object-detection:17.0.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")

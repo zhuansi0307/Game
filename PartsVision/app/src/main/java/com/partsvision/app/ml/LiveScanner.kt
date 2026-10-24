@@ -9,8 +9,12 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.partsvision.app.data.Part
 
-/** A library part with its appearance score smoothed over recent frames. */
-data class LiveCandidate(val match: MatchResult, val smoothedScore: Float)
+/** A library part with its appearance similarity (raw cosine) smoothed over recent frames. */
+data class LiveCandidate(val match: MatchResult, val smoothedScore: Float) {
+    /** 0..1 for display: text hits count fully, appearance goes through [Calibration]. */
+    val confidence: Float get() =
+        if (match.isTextHit) maxOf(match.textScore, Calibration.confidence(smoothedScore)) else Calibration.confidence(smoothedScore)
+}
 
 /** One object found in the frame and what it most likely is. */
 data class DetectedPart(
@@ -54,8 +58,9 @@ class LiveFrame(
  * CameraX analyzer that works like a YOLO-style detector over the user's own parts library:
  * ML Kit finds every object in the frame (with tracking ids), each object's crop is embedded and
  * matched against the library, and OCR text inside a box counts towards that box's match.
- * Scores are smoothed per tracked object so labels do not flicker; OCR, the slowest step,
- * runs on alternate frames.
+ * Scores are smoothed per tracked object so labels do not flicker. To keep the frame rate up
+ * with several objects in view, a tracked object's embedding is reused for a short while and at
+ * most [MAX_EMBEDS_PER_FRAME] objects are re-embedded per frame; OCR runs on alternate frames.
  */
 class LiveScanner(
     private val embedder: ImageEmbedderHelper,
@@ -74,6 +79,8 @@ class LiveScanner(
     private var lastLines: List<OcrLine> = emptyList()
     /** tracking key → (part id → smoothed score) */
     private val smoothed = HashMap<Int, HashMap<String, Float>>()
+    /** tracking key → (embedding, when it was computed) */
+    private val embeddings = HashMap<Int, Pair<FloatArray, Long>>()
 
     override fun analyze(image: ImageProxy) {
         try {
@@ -92,12 +99,14 @@ class LiveScanner(
             val regions = found.ifEmpty { listOf(FoundObject(centerBox(frame), FALLBACK_KEY)) }
 
             val library = parts()
+            val keys = regions.mapIndexed { i, obj -> obj.trackId ?: (UNTRACKED_KEY_BASE - i) }
+            refreshEmbeddings(frame, regions, keys, start)
             val objects = regions.mapIndexed { i, obj ->
-                val key = obj.trackId ?: (UNTRACKED_KEY_BASE - i)
-                val crop = ObjectFinder.crop(frame, obj.box)
+                val key = keys[i]
                 val texts = lastLines.filter { line -> line.box?.let { obj.box.contains(it.centerX(), it.centerY()) } ?: false }
                     .map { it.text }
-                val ranked = PartMatcher.rank(library, listOf(embedder.embed(crop)).filter { it.isNotEmpty() }, texts, limit = MAX_CANDIDATES)
+                val query = embeddings[key]?.first?.takeIf { it.isNotEmpty() }
+                val ranked = PartMatcher.rank(library, listOfNotNull(query), texts, limit = MAX_CANDIDATES)
                 DetectedPart(
                     key = key,
                     box = obj.box,
@@ -106,7 +115,8 @@ class LiveScanner(
                     isFallback = found.isEmpty(),
                 )
             }
-            smoothed.keys.retainAll(objects.map { it.key }.toSet())
+            smoothed.keys.retainAll(keys.toSet())
+            embeddings.keys.retainAll(keys.toSet())
 
             onResult(
                 LiveFrame(
@@ -124,6 +134,15 @@ class LiveScanner(
         } finally {
             image.close()
         }
+    }
+
+    /** New objects first, then the stalest; at most [MAX_EMBEDS_PER_FRAME] model runs per frame. */
+    private fun refreshEmbeddings(frame: Bitmap, regions: List<FoundObject>, keys: List<Int>, now: Long) {
+        regions.indices
+            .filter { i -> embeddings[keys[i]]?.let { now - it.second > REFRESH_MS } ?: true }
+            .sortedBy { i -> embeddings[keys[i]]?.second ?: Long.MIN_VALUE }
+            .take(MAX_EMBEDS_PER_FRAME)
+            .forEach { i -> embeddings[keys[i]] = embedder.embed(ObjectFinder.crop(frame, regions[i].box)) to now }
     }
 
     private fun smooth(key: Int, ranked: List<MatchResult>): List<LiveCandidate> {
@@ -162,8 +181,11 @@ class LiveScanner(
         private const val MAX_CANDIDATES = 4
         const val FALLBACK_KEY = -1
         private const val UNTRACKED_KEY_BASE = -100
-        const val MAYBE_SCORE = 0.55f
-        const val CONFIDENT_SCORE = 0.70f
-        const val CONFIDENT_MARGIN = 0.04f
+        private const val MAX_EMBEDS_PER_FRAME = 2
+        private const val REFRESH_MS = 500L
+        // Raw DINOv2 cosine thresholds (see Calibration): ≈30% / ≈88% displayed confidence.
+        const val MAYBE_SCORE = 0.31f
+        const val CONFIDENT_SCORE = 0.42f
+        const val CONFIDENT_MARGIN = 0.05f
     }
 }
