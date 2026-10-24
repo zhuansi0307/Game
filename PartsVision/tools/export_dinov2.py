@@ -46,7 +46,9 @@ def main():
         )
 
     from onnxruntime.quantization import QuantType, quantize_dynamic
-    quantize_dynamic(args.fp32, args.int8, weight_type=QuantType.QInt8)
+    # MatMul only: ONNX Runtime 1.20 (the app's version) has no ConvInteger kernel for int8
+    # weights, so a quantized patch-embedding Conv makes the model fail to load on the phone.
+    quantize_dynamic(args.fp32, args.int8, weight_type=QuantType.QInt8, op_types_to_quantize=["MatMul"])
 
     # Sanity check: ONNX (fp32 and int8) agrees with PyTorch.
     import numpy as np

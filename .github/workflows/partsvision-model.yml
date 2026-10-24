@@ -23,10 +23,16 @@ jobs:
       - name: Export
         working-directory: PartsVision/tools
         run: python export_dinov2.py
+      # Must load in the ONNX Runtime version the app ships (app/build.gradle.kts).
+      - name: Check with the app's ONNX Runtime
+        working-directory: PartsVision/tools
+        run: |
+          python -m venv /tmp/ort-app && /tmp/ort-app/bin/pip install -q onnxruntime==1.20.1 numpy
+          /tmp/ort-app/bin/python -c "import onnxruntime as o; o.InferenceSession('dinov2_small_int8.onnx'); print('loads in', o.__version__)"
       - name: Publish
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: model-dinov2s-v1
+          tag_name: model-dinov2s-v2
           name: PartsVision embedding model (DINOv2-small)
           prerelease: true
           body: On-device image embedding model used by the PartsVision app build.
