@@ -23,11 +23,22 @@ jobs:
       - name: Export
         working-directory: PartsVision/tools
         run: python export_fastsam.py
+      # Must load and run at both sizes in the ONNX Runtime version the app ships.
+      - name: Check with the app's ONNX Runtime
+        working-directory: PartsVision/tools
+        run: |
+          python -m venv /tmp/ort-app && /tmp/ort-app/bin/pip install -q onnxruntime==1.20.1 numpy
+          /tmp/ort-app/bin/python -c "
+          import numpy as np, onnxruntime as o
+          s = o.InferenceSession('fastsam_s.onnx')
+          for n in (320, 512):
+              outs = s.run(None, {s.get_inputs()[0].name: np.zeros((1, 3, n, n), np.float32)})
+              print(n, [x.shape for x in outs])"
       - name: Publish
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: model-fastsam-s-v1
+          tag_name: model-fastsam-s-v2
           name: PartsVision detector model (FastSAM-s)
           prerelease: true
           body: Class-agnostic object proposer used by the PartsVision app build.
-          files: PartsVision/tools/fastsam_s_512.onnx
+          files: PartsVision/tools/fastsam_s.onnx
