@@ -34,14 +34,22 @@ class ProposalSet(
     internal val scale: Float,
     internal val dx: Float,
     internal val dy: Float,
-)
+    /** Model input side in pixels; the prototype grid is a quarter of it. */
+    internal val inputSize: Int = LIVE_SIZE,
+) {
+    internal val protoSize: Int get() = inputSize / 4
+}
+
+/** Model input sizes: small and fast for the live camera, larger for piles of small parts. */
+const val LIVE_SIZE = 320
+const val PILE_SIZE = 512
 
 /**
  * Class-agnostic object proposer: FastSAM-s ("segment anything", YOLOv8-seg architecture,
  * ONNX). Unlike detectors trained on fixed categories, it outlines every individual item —
  * including touching parts in a pile — and gives each a mask, so a part can be cut out of its
  * surroundings before matching (the CNOS recipe for one-shot detection of new objects).
- * See tools/export_fastsam.py.
+ * The model takes any input size (see tools/export_fastsam.py); smaller is much faster.
  */
 class ObjectFinder(context: Context) {
     private val env: OrtEnvironment? = runCatching { OrtEnvironment.getEnvironment() }.getOrNull()
@@ -55,9 +63,13 @@ class ObjectFinder(context: Context) {
 
     val isAvailable: Boolean get() = session != null
 
-    private val input = FloatBuffer.allocate(3 * SIZE * SIZE)
-    private val pixels = IntArray(SIZE * SIZE)
-    private val square = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
+    /** Reusable input buffers per input size. */
+    private class Buffers(size: Int) {
+        val input: FloatBuffer = FloatBuffer.allocate(3 * size * size)
+        val pixels = IntArray(size * size)
+        val square: Bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    }
+    private val buffers = HashMap<Int, Buffers>()
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
 
     /**
@@ -65,14 +77,18 @@ class ObjectFinder(context: Context) {
      * multi-granularity candidates (whole part and its pieces), which is what pile analysis wants.
      */
     @Synchronized
-    fun propose(bitmap: Bitmap, minScore: Float, nmsIou: Float, maxCount: Int, minArea: Float = 0.002f, maxArea: Float = 0.4f): ProposalSet {
-        val s = session ?: return ProposalSet(emptyList(), FloatArray(0), 1f, 0f, 0f)
-        val scale = SIZE.toFloat() / max(bitmap.width, bitmap.height)
-        val dx = (SIZE - bitmap.width * scale) / 2
-        val dy = (SIZE - bitmap.height * scale) / 2
-        letterbox(bitmap, scale, dx, dy)
+    fun propose(
+        bitmap: Bitmap, minScore: Float, nmsIou: Float, maxCount: Int,
+        minArea: Float = 0.002f, maxArea: Float = 0.4f, size: Int = PILE_SIZE,
+    ): ProposalSet {
+        val s = session ?: return ProposalSet(emptyList(), FloatArray(0), 1f, 0f, 0f, size)
+        val scale = size.toFloat() / max(bitmap.width, bitmap.height)
+        val dx = (size - bitmap.width * scale) / 2
+        val dy = (size - bitmap.height * scale) / 2
+        val buf = buffers.getOrPut(size) { Buffers(size) }
+        letterbox(bitmap, scale, dx, dy, size, buf)
 
-        OnnxTensor.createTensor(env, input, longArrayOf(1, 3, SIZE.toLong(), SIZE.toLong())).use { tensor ->
+        OnnxTensor.createTensor(env, buf.input, longArrayOf(1, 3, size.toLong(), size.toLong())).use { tensor ->
             s.run(mapOf(s.inputNames.first() to tensor)).use { result ->
                 val out = (result.get(0) as OnnxTensor).floatBuffer
                 val protosBuf = (result.get(1) as OnnxTensor).floatBuffer
@@ -94,7 +110,7 @@ class ObjectFinder(context: Context) {
                     if (a < minArea || a > maxArea) continue
                     raw += Proposal(box, score, listOf(FloatArray(MASK_DIM) { k -> out.get((5 + k) * n + i) }))
                 }
-                return ProposalSet(nms(raw, nmsIou).take(maxCount), protos, scale, dx, dy)
+                return ProposalSet(nms(raw, nmsIou).take(maxCount), protos, scale, dx, dy, size)
             }
         }
     }
@@ -119,16 +135,18 @@ class ObjectFinder(context: Context) {
     fun maskedCrop(bitmap: Bitmap, set: ProposalSet, p: Proposal): Bitmap {
         val box = p.box
         if (box.width() < 2 || box.height() < 2 || set.protos.isEmpty()) return ObjectFinder.crop(bitmap, box, 0f)
-        // Mask on the 128x128 prototype grid, only for cells under the box.
+        // Mask on the prototype grid (a quarter of the input size), only for cells under the box.
+        val proto = set.protoSize
+        fun cell(letterboxCoord: Float) = (letterboxCoord / 4f).toInt().coerceIn(0, proto - 1)
         val gx0 = cell(box.left * set.scale + set.dx); val gx1 = cell(box.right * set.scale + set.dx)
         val gy0 = cell(box.top * set.scale + set.dy); val gy1 = cell(box.bottom * set.scale + set.dy)
         val gw = gx1 - gx0 + 1
         val grid = BooleanArray(gw * (gy1 - gy0 + 1))
         for (gy in gy0..gy1) for (gx in gx0..gx1) {
-            val off = gy * PROTO + gx
+            val off = gy * proto + gx
             grid[(gy - gy0) * gw + gx - gx0] = p.coefs.any { c ->
                 var dot = 0f
-                for (k in 0 until MASK_DIM) dot += c[k] * set.protos[k * PROTO * PROTO + off]
+                for (k in 0 until MASK_DIM) dot += c[k] * set.protos[k * proto * proto + off]
                 dot > 0f // sigmoid(dot) > 0.5
             }
         }
@@ -144,21 +162,20 @@ class ObjectFinder(context: Context) {
         return Bitmap.createBitmap(px, box.width(), box.height(), Bitmap.Config.ARGB_8888)
     }
 
-    private fun cell(letterboxCoord: Float) = (letterboxCoord / (SIZE / PROTO)).toInt().coerceIn(0, PROTO - 1)
-
-    private fun letterbox(bitmap: Bitmap, scale: Float, dx: Float, dy: Float) {
+    private fun letterbox(bitmap: Bitmap, scale: Float, dx: Float, dy: Float, size: Int, buf: Buffers) {
         var src = bitmap
-        while (max(src.width, src.height) >= 2 * SIZE) {
+        while (max(src.width, src.height) >= 2 * size) {
             src = Bitmap.createScaledBitmap(src, src.width / 2, src.height / 2, true)
         }
-        val canvas = Canvas(square)
+        val canvas = Canvas(buf.square)
         canvas.drawColor(PAD)
         canvas.drawBitmap(src, null, RectF(dx, dy, dx + bitmap.width * scale, dy + bitmap.height * scale), paint)
-        square.getPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE)
+        buf.square.getPixels(buf.pixels, 0, size, 0, 0, size, size)
+        val input = buf.input
         input.clear()
-        val plane = SIZE * SIZE
+        val plane = size * size
         for (i in 0 until plane) {
-            val c = pixels[i]
+            val c = buf.pixels[i]
             input.put(i, ((c shr 16) and 0xFF) / 255f)
             input.put(plane + i, ((c shr 8) and 0xFF) / 255f)
             input.put(2 * plane + i, (c and 0xFF) / 255f)
@@ -171,9 +188,7 @@ class ObjectFinder(context: Context) {
 
     companion object {
         private const val TAG = "ObjectFinder"
-        private const val MODEL_ASSET = "fastsam_s_512.onnx"
-        private const val SIZE = 512
-        private const val PROTO = 128
+        private const val MODEL_ASSET = "fastsam_s.onnx"
         private const val MASK_DIM = 32
         private const val CHANNELS = 5 + MASK_DIM
         private const val PAD = 0xFF727272.toInt()

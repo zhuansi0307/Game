@@ -50,15 +50,17 @@ class LiveFrame(
     val frameNo: Int,
     /** Set when frames cannot be analyzed (e.g. a model failed to load). */
     val problem: String? = null,
+    /** Where the time went, shown under the results for tuning. */
+    val timing: String = "",
 )
 
 /**
  * CameraX analyzer that works like a YOLO-style detector over the user's own parts library:
  * FastSAM proposes every individual object (so a pile is split into its parts), each object is
  * cut out with its mask and embedded with DINOv2, and the embedding is matched against the
- * library; OCR text inside a box counts towards that box. Boxes are tracked across frames so
- * scores can be smoothed and embeddings reused — at most [MAX_EMBEDS_PER_FRAME] objects are
- * (re)embedded per frame, which keeps the frame rate up when many parts are in view.
+ * library; OCR text inside a box counts towards that box. Objects are tracked across frames
+ * and identified once, then only re-checked occasionally — at most [MAX_EMBEDS_PER_FRAME]
+ * objects are embedded per frame — so moving the phone does not restart recognition.
  */
 class LiveScanner(
     private val embedder: ImageEmbedderHelper,
@@ -78,6 +80,8 @@ class LiveScanner(
     private val smoothed = HashMap<Int, HashMap<String, Float>>()
     /** tracking key → (embedding, when it was computed) */
     private val embeddings = HashMap<Int, Pair<FloatArray, Long>>()
+    /** tracking key → last result, shown while the detector briefly loses the object */
+    private val lastResults = HashMap<Int, DetectedPart>()
 
     override fun analyze(image: ImageProxy) {
         try {
@@ -86,37 +90,51 @@ class LiveScanner(
             lastFrame = frame
             frameNo++
 
-            if (frameNo % 3 == 1) lastLines = runCatching { ocr.readBoxedLinesBlocking(frame) }.getOrDefault(emptyList())
+            var t = SystemClock.elapsedRealtime()
+            if (frameNo % OCR_EVERY == 1) lastLines = runCatching { ocr.readBoxedLinesBlocking(frame) }.getOrDefault(emptyList())
+            val ocrMs = SystemClock.elapsedRealtime() - t
 
+            t = SystemClock.elapsedRealtime()
             val set = if (finder.isAvailable) {
-                finder.propose(frame, minScore = LIVE_MIN_SCORE, nmsIou = 0.5f, maxCount = MAX_OBJECTS)
+                finder.propose(frame, minScore = LIVE_MIN_SCORE, nmsIou = 0.5f, maxCount = MAX_OBJECTS, size = LIVE_SIZE)
             } else null
+            val detectMs = SystemClock.elapsedRealtime() - t
             val proposals = set?.proposals ?: listOf(Proposal(centerBox(frame), 1f, emptyList()))
-            val keys = tracker.assign(proposals.map { it.box })
-            refreshEmbeddings(frame, set, proposals, keys, start)
+            val now = SystemClock.elapsedRealtime()
+            val keys = tracker.assign(proposals.map { it.box }, now)
+
+            t = SystemClock.elapsedRealtime()
+            val embedded = refreshEmbeddings(frame, set, proposals, keys, now)
+            val embedMs = SystemClock.elapsedRealtime() - t
 
             val library = parts()
-            val objects = proposals.mapIndexed { i, p ->
+            val seen = proposals.mapIndexed { i, p ->
                 val key = keys[i]
                 val texts = lastLines.filter { line -> line.box?.let { p.box.contains(it.centerX(), it.centerY()) } ?: false }
                     .map { it.text }
                 val query = embeddings[key]?.first?.takeIf { it.isNotEmpty() }
-                val ranked = PartMatcher.rank(library, listOfNotNull(query), texts, limit = MAX_CANDIDATES)
                 DetectedPart(
                     key = key,
                     box = p.box,
-                    candidates = smooth(key, ranked),
+                    candidates = if (query == null && texts.isEmpty()) lastResults[key]?.candidates.orEmpty()
+                    else smooth(key, PartMatcher.rank(library, listOfNotNull(query), texts, limit = MAX_CANDIDATES)),
                     readNumber = OcrHelper.partNumberCandidates(texts).maxByOrNull { it.length },
                     isFallback = set == null,
-                )
+                ).also { lastResults[key] = it }
             }
-            smoothed.keys.retainAll(keys.toSet())
-            embeddings.keys.retainAll(keys.toSet())
+            // Objects the detector missed this frame but saw moments ago keep their box and label,
+            // so labels do not blink when the hand moves.
+            val seenKeys = keys.toSet()
+            val coasting = tracker.recentlyLost(now, COAST_MS).filter { it !in seenKeys }.mapNotNull { lastResults[it] }
+            val alive = tracker.aliveIds()
+            smoothed.keys.retainAll(alive)
+            embeddings.keys.retainAll(alive)
+            lastResults.keys.retainAll(alive)
 
             onResult(
                 LiveFrame(
                     frame = frame,
-                    objects = objects,
+                    objects = seen + coasting,
                     frameMs = SystemClock.elapsedRealtime() - start,
                     frameNo = frameNo,
                     problem = when {
@@ -124,6 +142,7 @@ class LiveScanner(
                         !finder.isAvailable -> "物体检测模型加载失败，只识别画面中心"
                         else -> null
                     },
+                    timing = "检测 ${detectMs}ms · 比对 ${embedded}个 ${embedMs}ms" + if (ocrMs > 5) " · 读字 ${ocrMs}ms" else "",
                 )
             )
         } catch (t: Throwable) {
@@ -135,16 +154,20 @@ class LiveScanner(
         }
     }
 
-    /** New objects first, then the stalest; at most [MAX_EMBEDS_PER_FRAME] model runs per frame. */
-    private fun refreshEmbeddings(frame: Bitmap, set: ProposalSet?, proposals: List<Proposal>, keys: List<Int>, now: Long) {
-        proposals.indices
+    /**
+     * Objects are identified once, when they first appear, and afterwards only re-checked every
+     * [REFRESH_MS]; new objects go first. Returns how many were embedded this frame.
+     */
+    private fun refreshEmbeddings(frame: Bitmap, set: ProposalSet?, proposals: List<Proposal>, keys: List<Int>, now: Long): Int {
+        val due = proposals.indices
             .filter { i -> embeddings[keys[i]]?.let { now - it.second > REFRESH_MS } ?: true }
-            .sortedBy { i -> embeddings[keys[i]]?.second ?: Long.MIN_VALUE }
+            .sortedWith(compareBy<Int> { i -> embeddings[keys[i]]?.second ?: Long.MIN_VALUE }.thenByDescending { proposals[it].area })
             .take(MAX_EMBEDS_PER_FRAME)
-            .forEach { i ->
-                val crop = if (set != null) finder.maskedCrop(frame, set, proposals[i]) else ObjectFinder.crop(frame, proposals[i].box)
-                embeddings[keys[i]] = embedder.embed(crop) to now
-            }
+        due.forEach { i ->
+            val crop = if (set != null) finder.maskedCrop(frame, set, proposals[i]) else ObjectFinder.crop(frame, proposals[i].box)
+            embeddings[keys[i]] = embedder.embed(crop) to now
+        }
+        return due.size
     }
 
     private fun smooth(key: Int, ranked: List<MatchResult>): List<LiveCandidate> {
@@ -176,32 +199,52 @@ class LiveScanner(
         return Rect(l, t, l + side, t + side)
     }
 
-    /** Greedy IoU matching of this frame's boxes to the previous frames' tracks. */
+    /**
+     * Follows objects from frame to frame. A box continues a track when it overlaps it or its
+     * centre is close (relative to the object's size) and its size is similar — overlap alone
+     * fails when the hand moves between two slow frames. Tracks survive [KEEP_MS] unseen, so an
+     * object that briefly disappears comes back with its identity (and label) intact.
+     */
     private class BoxTracker {
-        private class Track(val id: Int, var box: Rect, var missed: Int)
+        private class Track(val id: Int, var box: Rect, var lastSeen: Long)
         private val tracks = ArrayList<Track>()
         private var nextId = 1
 
-        fun assign(boxes: List<Rect>): List<Int> {
+        fun assign(boxes: List<Rect>, now: Long): List<Int> {
             val ids = IntArray(boxes.size) { -1 }
             val pairs = ArrayList<Triple<Int, Track, Float>>()
             for ((i, b) in boxes.withIndex()) for (t in tracks) {
-                val iou = ObjectFinder.iou(b, t.box)
-                if (iou > 0.3f) pairs += Triple(i, t, iou)
+                val score = matchScore(b, t.box)
+                if (score > 0f) pairs += Triple(i, t, score)
             }
             val used = HashSet<Int>()
             for ((i, t, _) in pairs.sortedByDescending { it.third }) {
                 if (ids[i] != -1 || t.id in used) continue
-                ids[i] = t.id; used += t.id; t.box = boxes[i]; t.missed = 0
+                ids[i] = t.id; used += t.id; t.box = boxes[i]; t.lastSeen = now
             }
-            tracks.filter { it.id !in used }.forEach { it.missed++ }
-            tracks.removeAll { it.missed > 3 }
+            tracks.removeAll { now - it.lastSeen > KEEP_MS }
             for (i in boxes.indices) if (ids[i] == -1) {
-                val t = Track(nextId++, boxes[i], 0)
+                val t = Track(nextId++, boxes[i], now)
                 tracks += t
                 ids[i] = t.id
             }
             return ids.toList()
+        }
+
+        fun recentlyLost(now: Long, withinMs: Long): List<Int> =
+            tracks.filter { it.lastSeen < now && now - it.lastSeen <= withinMs }.map { it.id }
+
+        fun aliveIds(): Set<Int> = tracks.mapTo(HashSet()) { it.id }
+
+        private fun matchScore(a: Rect, b: Rect): Float {
+            val iou = ObjectFinder.iou(a, b)
+            val sizeA = maxOf(a.width(), a.height()).toFloat()
+            val sizeB = maxOf(b.width(), b.height()).toFloat()
+            val ratio = sizeA / sizeB
+            if (ratio < 0.6f || ratio > 1.67f) return iou.takeIf { it > 0.3f } ?: 0f
+            val dist = kotlin.math.hypot(a.exactCenterX() - b.exactCenterX(), a.exactCenterY() - b.exactCenterY())
+            val near = 1f - dist / (0.8f * maxOf(sizeA, sizeB))
+            return maxOf(iou, near * 0.8f).takeIf { it > 0.15f } ?: 0f
         }
     }
 
@@ -211,7 +254,11 @@ class LiveScanner(
         private const val LIVE_MIN_SCORE = 0.35f
         private const val MAX_OBJECTS = 15
         private const val MAX_CANDIDATES = 4
-        private const val MAX_EMBEDS_PER_FRAME = 3
-        private const val REFRESH_MS = 1000L
+        private const val MAX_EMBEDS_PER_FRAME = 2
+        private const val REFRESH_MS = 3000L
+        private const val OCR_EVERY = 4
+        /** How long a lost object keeps its identity, and how long its label stays on screen. */
+        private const val KEEP_MS = 1500L
+        private const val COAST_MS = 600L
     }
 }

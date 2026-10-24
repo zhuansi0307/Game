@@ -316,7 +316,7 @@ private fun DetectionList(
             if (ai.loadingKey != null) Text("AI 正在确认一个没把握的零件…", style = MaterialTheme.typography.bodySmall)
             ai.error?.let { Text("AI：$it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
             Text(
-                "识别 ${recognized.size} 个 · 未知 ${unknown.size} 个 · ${live.frameMs} ms/帧 · 第 ${live.frameNo} 帧",
+                "识别 ${recognized.size} 个 · 未知 ${unknown.size} 个 · ${live.frameMs} ms/帧（${live.timing}）",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
