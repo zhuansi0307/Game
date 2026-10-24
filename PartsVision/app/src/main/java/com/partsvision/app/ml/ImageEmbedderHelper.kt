@@ -2,6 +2,7 @@ package com.partsvision.app.ml
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Rect
 import android.util.Log
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.core.BaseOptions
@@ -13,8 +14,8 @@ import kotlin.math.sqrt
  * On-device image feature extractor (MobileNetV3-Large via MediaPipe). Photos of the same part
  * produce nearby vectors, so a cosine-similarity search over the library finds matches offline.
  *
- * Each image is embedded as several crops (whole frame + centre) because a part held in the
- * hand often fills only the middle of the frame; comparing crop pairs ignores more background.
+ * Library photos are embedded as several crops (whole frame, centre, and the detected object)
+ * so they still match a live detection box that contains only the part and little background.
  */
 class ImageEmbedderHelper(context: Context) {
     private val embedder: ImageEmbedder? = try {
@@ -25,16 +26,18 @@ class ImageEmbedderHelper(context: Context) {
             .setQuantize(false)
             .build()
         ImageEmbedder.createFromOptions(context, options)
-    } catch (e: Exception) {
-        Log.e(TAG, "Image embedder unavailable", e)
+    } catch (t: Throwable) {
+        // Throwable, not Exception: a missing native library surfaces as an Error.
+        Log.e(TAG, "Image embedder unavailable", t)
         null
     }
 
     val isAvailable: Boolean get() = embedder != null
 
-    /** Embeddings of the whole image and of its centre, in that order. */
-    fun embedCrops(bitmap: Bitmap): List<FloatArray> =
-        listOf(bitmap, centerCrop(bitmap, CENTER_FRACTION)).map(::embed).filter { it.isNotEmpty() }
+    /** Embeddings of the whole photo, its centre and (if found) its main object. */
+    fun embedPhoto(bitmap: Bitmap, mainObject: Rect?): List<FloatArray> =
+        listOfNotNull(bitmap, centerCrop(bitmap, CENTER_FRACTION), mainObject?.let { ObjectFinder.crop(bitmap, it) })
+            .map(::embed).filter { it.isNotEmpty() }
 
     @Synchronized
     fun embed(bitmap: Bitmap): FloatArray {
@@ -51,7 +54,7 @@ class ImageEmbedderHelper(context: Context) {
         private const val MODEL_ASSET = "mobilenet_v3_large.tflite"
 
         /** Bump when the model or cropping changes so stored vectors get recomputed. */
-        const val VERSION = 2
+        const val VERSION = 3
         private const val CENTER_FRACTION = 0.6f
 
         fun centerCrop(bitmap: Bitmap, fraction: Float): Bitmap {

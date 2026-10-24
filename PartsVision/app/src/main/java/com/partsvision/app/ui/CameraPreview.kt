@@ -9,6 +9,7 @@ import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -43,7 +44,7 @@ fun rememberCameraPermission(onResult: (Boolean) -> Unit = {}): CameraPermission
     return CameraPermission(granted) { launcher.launch(Manifest.permission.CAMERA) }
 }
 
-/** Back-camera preview that feeds frames (~720p, latest-only) to [analyzer]. */
+/** Back-camera preview that feeds frames (~720p, 16:9, latest-only) to [analyzer]. */
 @Composable
 fun CameraPreview(analyzer: ImageAnalysis.Analyzer, torchOn: Boolean, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -58,10 +59,17 @@ fun CameraPreview(analyzer: ImageAnalysis.Analyzer, torchOn: Boolean, modifier: 
         future.addListener({
             if (disposed) return@addListener
             val provider = future.get()
-            val preview = Preview.Builder().build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
+            // Same 16:9 aspect for preview and analysis so detection boxes line up with what is shown.
+            val preview = Preview.Builder()
+                .setResolutionSelector(
+                    ResolutionSelector.Builder().setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY).build()
+                )
+                .build()
+                .also { it.setSurfaceProvider(previewView.surfaceProvider) }
             val analysis = ImageAnalysis.Builder()
                 .setResolutionSelector(
                     ResolutionSelector.Builder()
+                        .setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY)
                         .setResolutionStrategy(
                             ResolutionStrategy(Size(1280, 720), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER)
                         )

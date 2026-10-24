@@ -1,12 +1,16 @@
 package com.partsvision.app.ml
 
 import android.graphics.Bitmap
+import android.graphics.Rect
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.vision.text.Text
 import kotlinx.coroutines.tasks.await
+
+/** One line of text read on the image, with where it was found. */
+data class OcrLine(val text: String, val box: Rect?)
 
 /** Reads printed/stamped text from a part photo (ML Kit, fully on-device). */
 class OcrHelper {
@@ -17,9 +21,11 @@ class OcrHelper {
         return lines(recognizer.process(InputImage.fromBitmap(bitmap, 0)).await())
     }
 
-    /** Blocking variant for camera analyzer threads; never call on the main thread. */
-    fun readLinesBlocking(bitmap: Bitmap): List<String> =
-        lines(Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0))))
+    /** Lines with their positions, for camera analyzer threads; never call on the main thread. */
+    fun readBoxedLinesBlocking(bitmap: Bitmap): List<OcrLine> =
+        Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0))).textBlocks
+            .flatMap { block -> block.lines.map { OcrLine(it.text.trim(), it.boundingBox) } }
+            .filter { it.text.isNotEmpty() }
 
     private fun lines(result: Text): List<String> =
         result.textBlocks.flatMap { block -> block.lines.map { it.text.trim() } }.filter { it.isNotEmpty() }

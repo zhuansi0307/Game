@@ -2,6 +2,7 @@ package com.partsvision.app.ml
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.graphics.Rect
 import android.os.SystemClock
 import android.util.Log
 import androidx.camera.core.ImageAnalysis
@@ -11,46 +12,68 @@ import com.partsvision.app.data.Part
 /** A library part with its appearance score smoothed over recent frames. */
 data class LiveCandidate(val match: MatchResult, val smoothedScore: Float)
 
-/** What the live camera currently believes it is looking at. */
-data class LiveResult(
+/** One object found in the frame and what it most likely is. */
+data class DetectedPart(
+    /** Stable across frames while the object stays in view (tracking id). */
+    val key: Int,
+    /** Position in [LiveFrame.frame] pixels. */
+    val box: Rect,
     /** Best candidates first; empty only when the library is empty. */
     val candidates: List<LiveCandidate>,
-    /** Part-number-like text read on the part (shown even when it is not in the library). */
+    /** Part-number-like text read inside the box. */
     val readNumber: String?,
-    /** The top candidate is a text hit, or clearly ahead on appearance. */
-    val confident: Boolean,
-    /** Wall time of the last analysis cycle, for the on-screen speed readout. */
-    val frameMs: Long,
-    /** Set when frames cannot be analyzed (e.g. the embedding model failed to load). */
-    val problem: String? = null,
+    /** No object was detected, so this is just the centre of the frame. */
+    val isFallback: Boolean,
 ) {
     val top: LiveCandidate? get() = candidates.firstOrNull()
 
-    /** Worth showing as "maybe" even when not confident. */
+    /** Top candidate is a text hit, or clearly ahead of the runner-up on appearance. */
+    val confident: Boolean get() {
+        val t = top ?: return false
+        val second = candidates.getOrNull(1)?.smoothedScore ?: 0f
+        return t.match.isTextHit ||
+            (t.smoothedScore >= LiveScanner.CONFIDENT_SCORE && t.smoothedScore - second >= LiveScanner.CONFIDENT_MARGIN)
+    }
+
+    /** Worth labelling as "maybe" even when not confident. */
     val plausible: Boolean get() = top?.let { it.match.isTextHit || it.smoothedScore >= LiveScanner.MAYBE_SCORE } == true
 }
 
+/** Result of analyzing one camera frame. */
+class LiveFrame(
+    /** The upright frame the boxes refer to. */
+    val frame: Bitmap,
+    val objects: List<DetectedPart>,
+    val frameMs: Long,
+    val frameNo: Int,
+    /** Set when frames cannot be analyzed (e.g. a model failed to load). */
+    val problem: String? = null,
+)
+
 /**
- * CameraX analyzer that recognizes parts continuously and reports after every frame it
- * processes, so the overlay always shows the current best guess. Appearance scores are
- * smoothed per part across frames (EMA) to stop the top answer flickering, and OCR — the
- * slow step — runs on every other frame while the embedding runs on all of them.
+ * CameraX analyzer that works like a YOLO-style detector over the user's own parts library:
+ * ML Kit finds every object in the frame (with tracking ids), each object's crop is embedded and
+ * matched against the library, and OCR text inside a box counts towards that box's match.
+ * Scores are smoothed per tracked object so labels do not flicker; OCR, the slowest step,
+ * runs on alternate frames.
  */
 class LiveScanner(
     private val embedder: ImageEmbedderHelper,
     private val ocr: OcrHelper,
+    private val finder: ObjectFinder,
     private val parts: () -> List<Part>,
-    private val onResult: (LiveResult) -> Unit,
-    private val intervalMs: Long = 120,
+    private val onResult: (LiveFrame) -> Unit,
+    private val intervalMs: Long = 100,
 ) : ImageAnalysis.Analyzer {
 
     @Volatile var lastFrame: Bitmap? = null
         private set
 
     private var lastRun = 0L
-    private var cycle = 0
-    private var lastLines: List<String> = emptyList()
-    private val smoothed = HashMap<String, Float>()
+    private var frameNo = 0
+    private var lastLines: List<OcrLine> = emptyList()
+    /** tracking key → (part id → smoothed score) */
+    private val smoothed = HashMap<Int, HashMap<String, Float>>()
 
     override fun analyze(image: ImageProxy) {
         try {
@@ -60,42 +83,61 @@ class LiveScanner(
 
             val frame = upright(image)
             lastFrame = frame
+            frameNo++
 
-            if (cycle++ % 2 == 0) lastLines = runCatching { ocr.readLinesBlocking(frame) }.getOrDefault(emptyList())
-            val embeddings = embedder.embedCrops(frame)
+            if (frameNo % 2 == 1) lastLines = runCatching { ocr.readBoxedLinesBlocking(frame) }.getOrDefault(emptyList())
+            val found = runCatching { finder.detectInStream(frame) }.getOrDefault(emptyList())
+                .sortedByDescending { it.box.width() * it.box.height() }
+                .take(MAX_OBJECTS)
+            val regions = found.ifEmpty { listOf(FoundObject(centerBox(frame), FALLBACK_KEY)) }
+
             val library = parts()
-            val ranked = PartMatcher.rank(library, embeddings, lastLines, limit = library.size)
-
-            val seen = HashSet<String>()
-            val candidates = ranked.map { m ->
-                seen += m.part.id
-                val prev = smoothed[m.part.id] ?: m.imageScore
-                val s = prev + SMOOTHING * (m.imageScore - prev)
-                smoothed[m.part.id] = s
-                LiveCandidate(m, if (m.isTextHit) maxOf(s, m.textScore) else s)
-            }.sortedWith(compareByDescending<LiveCandidate> { it.match.isTextHit }.thenByDescending { it.smoothedScore })
-            smoothed.keys.retainAll(seen)
-
-            val top = candidates.getOrNull(0)
-            val second = candidates.getOrNull(1)?.smoothedScore ?: 0f
-            val confident = top != null && (top.match.isTextHit ||
-                (top.smoothedScore >= CONFIDENT_SCORE && top.smoothedScore - second >= CONFIDENT_MARGIN))
+            val objects = regions.mapIndexed { i, obj ->
+                val key = obj.trackId ?: (UNTRACKED_KEY_BASE - i)
+                val crop = ObjectFinder.crop(frame, obj.box)
+                val texts = lastLines.filter { line -> line.box?.let { obj.box.contains(it.centerX(), it.centerY()) } ?: false }
+                    .map { it.text }
+                val ranked = PartMatcher.rank(library, listOf(embedder.embed(crop)).filter { it.isNotEmpty() }, texts, limit = MAX_CANDIDATES)
+                DetectedPart(
+                    key = key,
+                    box = obj.box,
+                    candidates = smooth(key, ranked),
+                    readNumber = OcrHelper.partNumberCandidates(texts).maxByOrNull { it.length },
+                    isFallback = found.isEmpty(),
+                )
+            }
+            smoothed.keys.retainAll(objects.map { it.key }.toSet())
 
             onResult(
-                LiveResult(
-                    candidates = candidates.take(3),
-                    readNumber = OcrHelper.partNumberCandidates(lastLines).maxByOrNull { it.length },
-                    confident = confident,
+                LiveFrame(
+                    frame = frame,
+                    objects = objects,
                     frameMs = SystemClock.elapsedRealtime() - start,
+                    frameNo = frameNo,
                     problem = if (embedder.isAvailable) null else "外观识别模型加载失败，只能识别零件上的文字",
                 )
             )
-        } catch (e: Exception) {
-            Log.w(TAG, "Frame analysis failed", e)
-            onResult(LiveResult(emptyList(), null, false, 0, "识别出错：${e.message}"))
+        } catch (t: Throwable) {
+            // Throwable so that native-library errors show up on screen instead of silently stopping analysis.
+            Log.w(TAG, "Frame analysis failed", t)
+            lastFrame?.let { onResult(LiveFrame(it, emptyList(), 0, frameNo, "识别出错：${t.message ?: t.javaClass.simpleName}")) }
         } finally {
             image.close()
         }
+    }
+
+    private fun smooth(key: Int, ranked: List<MatchResult>): List<LiveCandidate> {
+        val scores = smoothed.getOrPut(key) { HashMap() }
+        val seen = HashSet<String>()
+        val result = ranked.map { m ->
+            seen += m.part.id
+            val prev = scores[m.part.id] ?: m.imageScore
+            val s = prev + SMOOTHING * (m.imageScore - prev)
+            scores[m.part.id] = s
+            LiveCandidate(m, if (m.isTextHit) maxOf(s, m.textScore) else s)
+        }
+        scores.keys.retainAll(seen)
+        return result.sortedWith(compareByDescending<LiveCandidate> { it.match.isTextHit }.thenByDescending { it.smoothedScore })
     }
 
     private fun upright(image: ImageProxy): Bitmap {
@@ -106,9 +148,20 @@ class LiveScanner(
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, m, true)
     }
 
+    private fun centerBox(frame: Bitmap): Rect {
+        val side = (minOf(frame.width, frame.height) * 0.6f).toInt()
+        val l = (frame.width - side) / 2
+        val t = (frame.height - side) / 2
+        return Rect(l, t, l + side, t + side)
+    }
+
     companion object {
         private const val TAG = "LiveScanner"
         private const val SMOOTHING = 0.5f
+        private const val MAX_OBJECTS = 5
+        private const val MAX_CANDIDATES = 4
+        const val FALLBACK_KEY = -1
+        private const val UNTRACKED_KEY_BASE = -100
         const val MAYBE_SCORE = 0.55f
         const val CONFIDENT_SCORE = 0.70f
         const val CONFIDENT_MARGIN = 0.04f

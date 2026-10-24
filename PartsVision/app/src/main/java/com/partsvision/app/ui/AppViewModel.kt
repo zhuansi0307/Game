@@ -12,9 +12,11 @@ import com.partsvision.app.data.Part
 import com.partsvision.app.data.PartRepository
 import com.partsvision.app.data.SettingsStore
 import com.partsvision.app.ml.ImageEmbedderHelper
-import com.partsvision.app.ml.LiveResult
+import com.partsvision.app.ml.DetectedPart
+import com.partsvision.app.ml.LiveFrame
 import com.partsvision.app.ml.LiveScanner
 import com.partsvision.app.ml.MatchResult
+import com.partsvision.app.ml.ObjectFinder
 import com.partsvision.app.ml.OcrHelper
 import com.partsvision.app.ml.PartMatcher
 import com.partsvision.app.util.ImageUtils
@@ -40,7 +42,12 @@ data class RecognizeState(
     val error: String? = null,
 )
 
-data class LiveAiState(val loading: Boolean = false, val verdict: AiVerdict? = null, val error: String? = null)
+/** Cloud answers for live objects, keyed by [DetectedPart.key]. */
+data class LiveAiState(
+    val loadingKey: Int? = null,
+    val verdicts: Map<Int, AiVerdict> = emptyMap(),
+    val error: String? = null,
+)
 
 data class SketchState(
     val generating: Boolean = false,
@@ -54,6 +61,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val settings = SettingsStore(app)
     private val ocr = OcrHelper()
     private val embedder by lazy { ImageEmbedderHelper(app) }
+    private val finder by lazy { ObjectFinder() }
 
     val parts: StateFlow<List<Part>> = repo.parts
 
@@ -63,14 +71,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _sketch = MutableStateFlow(SketchState())
     val sketch: StateFlow<SketchState> = _sketch.asStateFlow()
 
-    private val _live = MutableStateFlow<LiveResult?>(null)
-    val live: StateFlow<LiveResult?> = _live.asStateFlow()
+    private val _live = MutableStateFlow<LiveFrame?>(null)
+    val live: StateFlow<LiveFrame?> = _live.asStateFlow()
 
     private val _liveAi = MutableStateFlow(LiveAiState())
     val liveAi: StateFlow<LiveAiState> = _liveAi.asStateFlow()
     private var liveScanner: LiveScanner? = null
     private var lastAiAt = 0L
-    private var lastAiTopId: String? = null
+    private val aiAskedAt = HashMap<Int, Long>()
 
     /** True while stored photos are re-embedded after a model upgrade. */
     private val _reindexing = MutableStateFlow(false)
@@ -84,11 +92,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             repo.load()
             if (repo.embeddingVersion != ImageEmbedderHelper.VERSION) {
                 _reindexing.value = true
-                repo.reembed(ImageEmbedderHelper.VERSION) { embedder.embedCrops(ImageUtils.scaleDown(it, 1024)) }
+                repo.reembed(ImageEmbedderHelper.VERSION) { photoEmbeddings(ImageUtils.scaleDown(it, 1024)) }
                 _reindexing.value = false
             }
         }
     }
+
+    /** Library-side features of a still photo; blocking, call off the main thread. */
+    private fun photoEmbeddings(photo: Bitmap): List<FloatArray> =
+        embedder.embedPhoto(photo, runCatching { finder.mainObject(photo) }.getOrNull())
 
     suspend fun decode(uri: Uri): Bitmap? = withContext(Dispatchers.IO) { ImageUtils.decode(getApplication(), uri) }
 
@@ -96,44 +108,45 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Analyzer for the live camera; results are published on [live]. */
     fun newLiveScanner(): LiveScanner =
-        LiveScanner(embedder, ocr, parts = { parts.value }, onResult = ::onLiveResult).also { liveScanner = it }
+        LiveScanner(embedder, ocr, finder, parts = { parts.value }, onResult = ::onLiveFrame).also { liveScanner = it }
 
     fun clearLive() {
         _live.value = null
         _liveAi.value = LiveAiState()
-        lastAiTopId = null
+        aiAskedAt.clear()
     }
 
-    private fun onLiveResult(result: LiveResult) {
+    private fun onLiveFrame(result: LiveFrame) {
         _live.value = result
-        if (result.confident) {
-            lastAiTopId = null
-            if (_liveAi.value.verdict != null) _liveAi.value = LiveAiState()
-            return
-        }
-        // Not sure locally: ask the cloud model, at most once per scene and never more often than every few seconds.
+        val keys = result.objects.map { it.key }.toSet()
+        _liveAi.update { s -> s.copy(verdicts = s.verdicts.filterKeys { it in keys }) }
+
+        // Ask the cloud model about the biggest object the library is unsure about — at most one
+        // request at a time, one every few seconds, and the same object again only after a while.
+        if (!settings.cloudAssist || !settings.hasApiKey || _liveAi.value.loadingKey != null) return
         val now = System.currentTimeMillis()
-        val topId = result.top?.match?.part?.id ?: ""
-        if (!settings.cloudAssist || !settings.hasApiKey || _liveAi.value.loading) return
         if (now - lastAiAt < LIVE_AI_COOLDOWN_MS) return
-        if (topId == lastAiTopId && now - lastAiAt < LIVE_AI_REPEAT_MS) return
-        val frame = liveScanner?.lastFrame ?: return
+        val target = result.objects
+            .filter { !it.confident && now - (aiAskedAt[it.key] ?: 0L) > LIVE_AI_REPEAT_MS }
+            .maxByOrNull { it.box.width() * it.box.height() } ?: return
         lastAiAt = now
-        lastAiTopId = topId
-        _liveAi.value = LiveAiState(loading = true)
+        aiAskedAt[target.key] = now
+        _liveAi.update { it.copy(loadingKey = target.key, error = null) }
+        val crop = ObjectFinder.crop(result.frame, target.box, pad = 0.2f)
         viewModelScope.launch {
-            _liveAi.value = try {
-                LiveAiState(verdict = identifyWithAi(frame, emptyList(), result.candidates.map { it.match }))
+            try {
+                val verdict = identifyWithAi(crop, emptyList(), target.candidates.map { it.match })
+                _liveAi.update { it.copy(loadingKey = null, verdicts = it.verdicts + (target.key to verdict)) }
             } catch (e: Exception) {
-                LiveAiState(error = e.message ?: "AI 识别失败")
+                _liveAi.update { it.copy(loadingKey = null, error = e.message ?: "AI 识别失败") }
             }
         }
     }
 
-    /** Adds the current camera frame to [part]'s photos so future scans match it better. */
-    fun confirmLive(part: Part) {
-        val frame = liveScanner?.lastFrame ?: return
-        viewModelScope.launch { savePart(part.partNumber, "", "", listOf(frame)) }
+    /** Adds [obj]'s crop from [frame] to [part]'s photos so future scans match it better. */
+    fun confirmLive(part: Part, obj: DetectedPart, frame: Bitmap) {
+        val crop = ObjectFinder.crop(frame, obj.box, pad = 0.15f)
+        viewModelScope.launch { savePart(part.partNumber, "", "", listOf(crop)) }
     }
 
     fun recognize(photo: Bitmap) {
@@ -142,7 +155,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         recognizeJob = viewModelScope.launch {
             try {
                 val lines = runCatching { ocr.readLines(photo) }.getOrDefault(emptyList())
-                val embeddings = withContext(Dispatchers.Default) { embedder.embedCrops(photo) }
+                val embeddings = withContext(Dispatchers.Default) { photoEmbeddings(photo) }
                 val matches = withContext(Dispatchers.Default) { PartMatcher.rank(parts.value, embeddings, lines) }
                 _recognize.update { it.copy(analyzing = false, ocrLines = lines, matches = matches) }
                 if (settings.cloudAssist && settings.hasApiKey) askAi(photo, lines, matches)
@@ -203,7 +216,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Saves photos under [partNumber]; creates the part if needed. Returns the part id. */
     suspend fun savePart(partNumber: String, name: String, note: String, photos: List<Bitmap>): String {
         val withEmbeddings = withContext(Dispatchers.Default) {
-            photos.map { ImageUtils.scaleDown(it, 1024).let { b -> b to embedder.embedCrops(b) } }
+            photos.map { ImageUtils.scaleDown(it, 1024).let { b -> b to photoEmbeddings(b) } }
         }
         return repo.upsert(partNumber, name, note, withEmbeddings).id
     }
@@ -246,6 +259,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     override fun onCleared() {
         ocr.close()
         embedder.close()
+        finder.close()
     }
 
     companion object {
