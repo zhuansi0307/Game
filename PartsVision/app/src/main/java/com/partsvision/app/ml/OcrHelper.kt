@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.google.android.gms.tasks.Tasks
+import com.google.mlkit.vision.text.Text
 import kotlinx.coroutines.tasks.await
 
 /** Reads printed/stamped text from a part photo (ML Kit, fully on-device). */
@@ -12,9 +14,15 @@ class OcrHelper {
 
     /** Returns every text line found, top-to-bottom. */
     suspend fun readLines(bitmap: Bitmap): List<String> {
-        val result = recognizer.process(InputImage.fromBitmap(bitmap, 0)).await()
-        return result.textBlocks.flatMap { block -> block.lines.map { it.text.trim() } }.filter { it.isNotEmpty() }
+        return lines(recognizer.process(InputImage.fromBitmap(bitmap, 0)).await())
     }
+
+    /** Blocking variant for camera analyzer threads; never call on the main thread. */
+    fun readLinesBlocking(bitmap: Bitmap): List<String> =
+        lines(Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0))))
+
+    private fun lines(result: Text): List<String> =
+        result.textBlocks.flatMap { block -> block.lines.map { it.text.trim() } }.filter { it.isNotEmpty() }
 
     fun close() = recognizer.close()
 

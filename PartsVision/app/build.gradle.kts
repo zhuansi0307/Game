@@ -79,6 +79,11 @@ dependencies {
     implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("io.coil-kt:coil-compose:2.7.0")
 
+    // Live camera preview + frame analysis
+    implementation("androidx.camera:camera-camera2:1.4.1")
+    implementation("androidx.camera:camera-lifecycle:1.4.1")
+    implementation("androidx.camera:camera-view:1.4.1")
+
     // On-device recognition: image similarity + OCR of stamped/printed part numbers
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
     implementation("com.google.mlkit:text-recognition:16.0.1")

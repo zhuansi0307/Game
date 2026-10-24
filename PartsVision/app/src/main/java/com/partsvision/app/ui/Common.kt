@@ -52,13 +52,16 @@ fun rememberImagePicker(vm: AppViewModel, multiple: Boolean = false, onImage: (B
     val many = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(10)) { uris ->
         uris.forEach(::deliver)
     }
-    return remember(multiple) {
+    fun launchCamera() {
+        val uri = ImageUtils.newCameraUri(context)
+        pendingUri = uri
+        camera.launch(uri)
+    }
+    // The app declares CAMERA (for the live scanner), so the system camera intent needs it granted too.
+    val permission = rememberCameraPermission { granted -> if (granted) launchCamera() }
+    return remember(multiple, permission.granted) {
         ImagePicker(
-            takePhoto = {
-                val uri = ImageUtils.newCameraUri(context)
-                pendingUri = uri
-                camera.launch(uri)
-            },
+            takePhoto = { if (permission.granted) launchCamera() else permission.request() },
             pickFromGallery = {
                 val request = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                 if (multiple) many.launch(request) else single.launch(request)

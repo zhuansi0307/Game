@@ -12,6 +12,8 @@ import com.partsvision.app.data.Part
 import com.partsvision.app.data.PartRepository
 import com.partsvision.app.data.SettingsStore
 import com.partsvision.app.ml.ImageEmbedderHelper
+import com.partsvision.app.ml.LiveResult
+import com.partsvision.app.ml.LiveScanner
 import com.partsvision.app.ml.MatchResult
 import com.partsvision.app.ml.OcrHelper
 import com.partsvision.app.ml.PartMatcher
@@ -59,6 +61,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _sketch = MutableStateFlow(SketchState())
     val sketch: StateFlow<SketchState> = _sketch.asStateFlow()
 
+    private val _live = MutableStateFlow<LiveResult?>(null)
+    val live: StateFlow<LiveResult?> = _live.asStateFlow()
+
     private var recognizeJob: Job? = null
     private var sketchJob: Job? = null
 
@@ -69,6 +74,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun decode(uri: Uri): Bitmap? = withContext(Dispatchers.IO) { ImageUtils.decode(getApplication(), uri) }
 
     // ---------------------------------------------------------------- recognition
+
+    /** Analyzer for the live camera; results are published on [live]. */
+    fun newLiveScanner(): LiveScanner =
+        LiveScanner(embedder, ocr, parts = { parts.value }, onResult = { _live.value = it })
+
+    fun clearLive() {
+        _live.value = null
+    }
 
     fun recognize(photo: Bitmap) {
         recognizeJob?.cancel()
