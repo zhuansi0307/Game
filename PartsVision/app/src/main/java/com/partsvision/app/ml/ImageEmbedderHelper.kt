@@ -23,6 +23,11 @@ import kotlin.math.sqrt
  */
 class ImageEmbedderHelper(context: Context) {
     private val env: OrtEnvironment? = runCatching { OrtEnvironment.getEnvironment() }.getOrNull()
+
+    /** Why the model could not be loaded, for the on-screen message. */
+    var loadError: String? = null
+        private set
+
     private val session: OrtSession? = try {
         val bytes = context.assets.open(MODEL_ASSET).use { it.readBytes() }
         val options = OrtSession.SessionOptions().apply {
@@ -33,6 +38,7 @@ class ImageEmbedderHelper(context: Context) {
     } catch (t: Throwable) {
         // Throwable, not Exception: a missing native library surfaces as an Error.
         Log.e(TAG, "Image embedder unavailable", t)
+        loadError = t.message ?: t.javaClass.simpleName
         null
     }
 

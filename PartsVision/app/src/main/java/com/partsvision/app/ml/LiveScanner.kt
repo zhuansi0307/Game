@@ -120,7 +120,7 @@ class LiveScanner(
                     frameMs = SystemClock.elapsedRealtime() - start,
                     frameNo = frameNo,
                     problem = when {
-                        !embedder.isAvailable -> "外观识别模型加载失败，只能识别零件上的文字"
+                        !embedder.isAvailable -> "外观识别模型加载失败，只能识别零件上的文字（${embedder.loadError?.take(120)}）"
                         !finder.isAvailable -> "物体检测模型加载失败，只识别画面中心"
                         else -> null
                     },
