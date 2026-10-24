@@ -22,11 +22,11 @@ data class DetectedPart(
     val key: Int,
     /** Position in [LiveFrame.frame] pixels. */
     val box: Rect,
-    /** Best candidates first; empty only when the library is empty. */
+    /** Best candidates first; empty only when the library is empty or not yet embedded. */
     val candidates: List<LiveCandidate>,
     /** Part-number-like text read inside the box. */
     val readNumber: String?,
-    /** No object was detected, so this is just the centre of the frame. */
+    /** No object proposer available, so this is just the centre of the frame. */
     val isFallback: Boolean,
 ) {
     val top: LiveCandidate? get() = candidates.firstOrNull()
@@ -34,13 +34,11 @@ data class DetectedPart(
     /** Top candidate is a text hit, or clearly ahead of the runner-up on appearance. */
     val confident: Boolean get() {
         val t = top ?: return false
-        val second = candidates.getOrNull(1)?.smoothedScore ?: 0f
-        return t.match.isTextHit ||
-            (t.smoothedScore >= LiveScanner.CONFIDENT_SCORE && t.smoothedScore - second >= LiveScanner.CONFIDENT_MARGIN)
+        return t.match.isTextHit || Calibration.isConfident(t.smoothedScore, candidates.getOrNull(1)?.smoothedScore)
     }
 
     /** Worth labelling as "maybe" even when not confident. */
-    val plausible: Boolean get() = top?.let { it.match.isTextHit || it.smoothedScore >= LiveScanner.MAYBE_SCORE } == true
+    val plausible: Boolean get() = top?.let { it.match.isTextHit || it.smoothedScore >= Calibration.MAYBE } == true
 }
 
 /** Result of analyzing one camera frame. */
@@ -56,11 +54,11 @@ class LiveFrame(
 
 /**
  * CameraX analyzer that works like a YOLO-style detector over the user's own parts library:
- * ML Kit finds every object in the frame (with tracking ids), each object's crop is embedded and
- * matched against the library, and OCR text inside a box counts towards that box's match.
- * Scores are smoothed per tracked object so labels do not flicker. To keep the frame rate up
- * with several objects in view, a tracked object's embedding is reused for a short while and at
- * most [MAX_EMBEDS_PER_FRAME] objects are re-embedded per frame; OCR runs on alternate frames.
+ * FastSAM proposes every individual object (so a pile is split into its parts), each object is
+ * cut out with its mask and embedded with DINOv2, and the embedding is matched against the
+ * library; OCR text inside a box counts towards that box. Boxes are tracked across frames so
+ * scores can be smoothed and embeddings reused — at most [MAX_EMBEDS_PER_FRAME] objects are
+ * (re)embedded per frame, which keeps the frame rate up when many parts are in view.
  */
 class LiveScanner(
     private val embedder: ImageEmbedderHelper,
@@ -68,15 +66,14 @@ class LiveScanner(
     private val finder: ObjectFinder,
     private val parts: () -> List<Part>,
     private val onResult: (LiveFrame) -> Unit,
-    private val intervalMs: Long = 100,
 ) : ImageAnalysis.Analyzer {
 
     @Volatile var lastFrame: Bitmap? = null
         private set
 
-    private var lastRun = 0L
     private var frameNo = 0
     private var lastLines: List<OcrLine> = emptyList()
+    private val tracker = BoxTracker()
     /** tracking key → (part id → smoothed score) */
     private val smoothed = HashMap<Int, HashMap<String, Float>>()
     /** tracking key → (embedding, when it was computed) */
@@ -85,34 +82,32 @@ class LiveScanner(
     override fun analyze(image: ImageProxy) {
         try {
             val start = SystemClock.elapsedRealtime()
-            if (start - lastRun < intervalMs) return
-            lastRun = start
-
             val frame = upright(image)
             lastFrame = frame
             frameNo++
 
-            if (frameNo % 2 == 1) lastLines = runCatching { ocr.readBoxedLinesBlocking(frame) }.getOrDefault(emptyList())
-            val found = runCatching { finder.detectInStream(frame) }.getOrDefault(emptyList())
-                .sortedByDescending { it.box.width() * it.box.height() }
-                .take(MAX_OBJECTS)
-            val regions = found.ifEmpty { listOf(FoundObject(centerBox(frame), FALLBACK_KEY)) }
+            if (frameNo % 3 == 1) lastLines = runCatching { ocr.readBoxedLinesBlocking(frame) }.getOrDefault(emptyList())
+
+            val set = if (finder.isAvailable) {
+                finder.propose(frame, minScore = LIVE_MIN_SCORE, nmsIou = 0.5f, maxCount = MAX_OBJECTS)
+            } else null
+            val proposals = set?.proposals ?: listOf(Proposal(centerBox(frame), 1f, emptyList()))
+            val keys = tracker.assign(proposals.map { it.box })
+            refreshEmbeddings(frame, set, proposals, keys, start)
 
             val library = parts()
-            val keys = regions.mapIndexed { i, obj -> obj.trackId ?: (UNTRACKED_KEY_BASE - i) }
-            refreshEmbeddings(frame, regions, keys, start)
-            val objects = regions.mapIndexed { i, obj ->
+            val objects = proposals.mapIndexed { i, p ->
                 val key = keys[i]
-                val texts = lastLines.filter { line -> line.box?.let { obj.box.contains(it.centerX(), it.centerY()) } ?: false }
+                val texts = lastLines.filter { line -> line.box?.let { p.box.contains(it.centerX(), it.centerY()) } ?: false }
                     .map { it.text }
                 val query = embeddings[key]?.first?.takeIf { it.isNotEmpty() }
                 val ranked = PartMatcher.rank(library, listOfNotNull(query), texts, limit = MAX_CANDIDATES)
                 DetectedPart(
                     key = key,
-                    box = obj.box,
+                    box = p.box,
                     candidates = smooth(key, ranked),
                     readNumber = OcrHelper.partNumberCandidates(texts).maxByOrNull { it.length },
-                    isFallback = found.isEmpty(),
+                    isFallback = set == null,
                 )
             }
             smoothed.keys.retainAll(keys.toSet())
@@ -124,7 +119,11 @@ class LiveScanner(
                     objects = objects,
                     frameMs = SystemClock.elapsedRealtime() - start,
                     frameNo = frameNo,
-                    problem = if (embedder.isAvailable) null else "外观识别模型加载失败，只能识别零件上的文字",
+                    problem = when {
+                        !embedder.isAvailable -> "外观识别模型加载失败，只能识别零件上的文字"
+                        !finder.isAvailable -> "物体检测模型加载失败，只识别画面中心"
+                        else -> null
+                    },
                 )
             )
         } catch (t: Throwable) {
@@ -137,12 +136,15 @@ class LiveScanner(
     }
 
     /** New objects first, then the stalest; at most [MAX_EMBEDS_PER_FRAME] model runs per frame. */
-    private fun refreshEmbeddings(frame: Bitmap, regions: List<FoundObject>, keys: List<Int>, now: Long) {
-        regions.indices
+    private fun refreshEmbeddings(frame: Bitmap, set: ProposalSet?, proposals: List<Proposal>, keys: List<Int>, now: Long) {
+        proposals.indices
             .filter { i -> embeddings[keys[i]]?.let { now - it.second > REFRESH_MS } ?: true }
             .sortedBy { i -> embeddings[keys[i]]?.second ?: Long.MIN_VALUE }
             .take(MAX_EMBEDS_PER_FRAME)
-            .forEach { i -> embeddings[keys[i]] = embedder.embed(ObjectFinder.crop(frame, regions[i].box)) to now }
+            .forEach { i ->
+                val crop = if (set != null) finder.maskedCrop(frame, set, proposals[i]) else ObjectFinder.crop(frame, proposals[i].box)
+                embeddings[keys[i]] = embedder.embed(crop) to now
+            }
     }
 
     private fun smooth(key: Int, ranked: List<MatchResult>): List<LiveCandidate> {
@@ -153,7 +155,7 @@ class LiveScanner(
             val prev = scores[m.part.id] ?: m.imageScore
             val s = prev + SMOOTHING * (m.imageScore - prev)
             scores[m.part.id] = s
-            LiveCandidate(m, if (m.isTextHit) maxOf(s, m.textScore) else s)
+            LiveCandidate(m, s)
         }
         scores.keys.retainAll(seen)
         return result.sortedWith(compareByDescending<LiveCandidate> { it.match.isTextHit }.thenByDescending { it.smoothedScore })
@@ -174,18 +176,42 @@ class LiveScanner(
         return Rect(l, t, l + side, t + side)
     }
 
+    /** Greedy IoU matching of this frame's boxes to the previous frames' tracks. */
+    private class BoxTracker {
+        private class Track(val id: Int, var box: Rect, var missed: Int)
+        private val tracks = ArrayList<Track>()
+        private var nextId = 1
+
+        fun assign(boxes: List<Rect>): List<Int> {
+            val ids = IntArray(boxes.size) { -1 }
+            val pairs = ArrayList<Triple<Int, Track, Float>>()
+            for ((i, b) in boxes.withIndex()) for (t in tracks) {
+                val iou = ObjectFinder.iou(b, t.box)
+                if (iou > 0.3f) pairs += Triple(i, t, iou)
+            }
+            val used = HashSet<Int>()
+            for ((i, t, _) in pairs.sortedByDescending { it.third }) {
+                if (ids[i] != -1 || t.id in used) continue
+                ids[i] = t.id; used += t.id; t.box = boxes[i]; t.missed = 0
+            }
+            tracks.filter { it.id !in used }.forEach { it.missed++ }
+            tracks.removeAll { it.missed > 3 }
+            for (i in boxes.indices) if (ids[i] == -1) {
+                val t = Track(nextId++, boxes[i], 0)
+                tracks += t
+                ids[i] = t.id
+            }
+            return ids.toList()
+        }
+    }
+
     companion object {
         private const val TAG = "LiveScanner"
         private const val SMOOTHING = 0.5f
-        private const val MAX_OBJECTS = 5
+        private const val LIVE_MIN_SCORE = 0.35f
+        private const val MAX_OBJECTS = 15
         private const val MAX_CANDIDATES = 4
-        const val FALLBACK_KEY = -1
-        private const val UNTRACKED_KEY_BASE = -100
-        private const val MAX_EMBEDS_PER_FRAME = 2
-        private const val REFRESH_MS = 500L
-        // Raw DINOv2 cosine thresholds (see Calibration): ≈30% / ≈88% displayed confidence.
-        const val MAYBE_SCORE = 0.31f
-        const val CONFIDENT_SCORE = 0.42f
-        const val CONFIDENT_MARGIN = 0.05f
+        private const val MAX_EMBEDS_PER_FRAME = 3
+        private const val REFRESH_MS = 1000L
     }
 }

@@ -51,16 +51,23 @@ android {
     }
 }
 
-// On-device image embedding model (DINOv2-small int8, ~24 MB), fetched once into assets.
-// Produced by tools/export_dinov2.py via the "PartsVision embedding model" workflow.
+// On-device models, fetched once into assets from this repo's releases:
+//  - DINOv2-small int8 (~24 MB) image embedder, tools/export_dinov2.py
+//  - FastSAM-s (~47 MB) object proposer, tools/export_fastsam.py
+val models = mapOf(
+    "dinov2_small_int8.onnx" to "https://github.com/zhuansi0307/Game/releases/download/model-dinov2s-v1/dinov2_small_int8.onnx",
+    "fastsam_s_512.onnx" to "https://github.com/zhuansi0307/Game/releases/download/model-fastsam-s-v1/fastsam_s_512.onnx",
+)
 val downloadModels by tasks.registering {
-    val target = file("src/main/assets/dinov2_small_int8.onnx")
-    outputs.file(target)
+    val targets = models.keys.map { file("src/main/assets/$it") }
+    outputs.files(targets)
     doLast {
-        if (!target.exists()) {
-            target.parentFile.mkdirs()
-            URI("https://github.com/zhuansi0307/Game/releases/download/model-dinov2s-v1/dinov2_small_int8.onnx")
-                .toURL().openStream().use { input -> target.outputStream().use { input.copyTo(it) } }
+        models.forEach { (name, url) ->
+            val target = file("src/main/assets/$name")
+            if (!target.exists()) {
+                target.parentFile.mkdirs()
+                URI(url).toURL().openStream().use { input -> target.outputStream().use { input.copyTo(it) } }
+            }
         }
     }
 }
@@ -88,10 +95,9 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.4.1")
     implementation("androidx.camera:camera-view:1.4.1")
 
-    // On-device recognition: object boxes, image similarity, OCR of stamped/printed part numbers
+    // On-device recognition: OCR of stamped/printed part numbers; models run on ONNX Runtime
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
     implementation("com.google.mlkit:text-recognition:16.0.1")
-    implementation("com.google.mlkit:object-detection:17.0.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
 

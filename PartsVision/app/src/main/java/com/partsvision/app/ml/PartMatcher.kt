@@ -24,16 +24,23 @@ data class MatchResult(
 }
 
 /**
- * Maps DINOv2 cosine similarity to an intuitive confidence. Raw cosine for the same part in a
- * new environment is typically 0.4–0.7 and for unrelated objects below ~0.3, so showing it
- * directly makes a correct match look like "56%". Midpoint and slope come from the synthetic
- * environment-change test (best same/other split at ~0.34).
+ * Thresholds on DINOv2 cosine similarity and a mapping to an intuitive confidence.
+ *
+ * Measured on a real pile photo with masked crops: the same part scores ~0.55–0.95, similar-looking
+ * but different fittings and dark background patches ~0.40–0.48, unrelated objects < 0.3. Because similar parts sit close, a match
+ * is only called confident when it also beats the next library part by [MARGIN].
  */
 object Calibration {
-    private const val MIDPOINT = 0.34f
-    private const val SLOPE = 0.04f
+    const val MAYBE = 0.46f
+    const val CONFIDENT = 0.53f
+    const val MARGIN = 0.05f
+    private const val MIDPOINT = 0.46f
+    private const val SLOPE = 0.05f
 
     fun confidence(cosine: Float): Float = 1f / (1f + kotlin.math.exp(-(cosine - MIDPOINT) / SLOPE))
+
+    fun isConfident(best: Float, secondBest: Float?): Boolean =
+        best >= CONFIDENT && best - (secondBest ?: 0f) >= MARGIN
 }
 
 object PartMatcher {

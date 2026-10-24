@@ -18,6 +18,8 @@ import com.partsvision.app.ml.LiveScanner
 import com.partsvision.app.ml.MatchResult
 import com.partsvision.app.ml.ObjectFinder
 import com.partsvision.app.ml.OcrHelper
+import com.partsvision.app.ml.PileResult
+import com.partsvision.app.ml.PileScanner
 import com.partsvision.app.ml.PartMatcher
 import com.partsvision.app.util.ImageUtils
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +51,10 @@ data class LiveAiState(
     val error: String? = null,
 )
 
+data class PileState(val running: Boolean = false, val progress: Float = 0f, val result: PileResult? = null, val error: String? = null) {
+    val active: Boolean get() = running || result != null || error != null
+}
+
 data class SketchState(
     val generating: Boolean = false,
     val progressChars: Int = 0,
@@ -61,7 +67,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val settings = SettingsStore(app)
     private val ocr = OcrHelper()
     private val embedder by lazy { ImageEmbedderHelper(app) }
-    private val finder by lazy { ObjectFinder() }
+    private val finder by lazy { ObjectFinder(app) }
+    private val pileScanner by lazy { PileScanner(embedder, finder) }
 
     val parts: StateFlow<List<Part>> = repo.parts
 
@@ -79,6 +86,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private var liveScanner: LiveScanner? = null
     private var lastAiAt = 0L
     private val aiAskedAt = HashMap<Int, Long>()
+
+    private val _pile = MutableStateFlow(PileState())
+    val pile: StateFlow<PileState> = _pile.asStateFlow()
+    private var pileJob: Job? = null
 
     /** True while stored photos are re-embedded after a model upgrade. */
     private val _reindexing = MutableStateFlow(false)
@@ -99,8 +110,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Library-side features of a still photo; blocking, call off the main thread. */
-    private fun photoEmbeddings(photo: Bitmap): List<FloatArray> =
-        embedder.embedPhoto(photo, runCatching { finder.mainObject(photo) }.getOrNull())
+    private fun photoEmbeddings(photo: Bitmap): List<FloatArray> {
+        // Besides the whole photo, store the part alone: its box, and its box with the background masked out.
+        val views = runCatching { finder.mainObject(photo) }.getOrNull()?.let { (set, p) ->
+            listOf(ObjectFinder.crop(photo, p.box), finder.maskedCrop(photo, set, p))
+        }.orEmpty()
+        return embedder.embedPhoto(photo, views)
+    }
 
     suspend fun decode(uri: Uri): Bitmap? = withContext(Dispatchers.IO) { ImageUtils.decode(getApplication(), uri) }
 
@@ -141,6 +157,26 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 _liveAi.update { it.copy(loadingKey = null, error = e.message ?: "AI 识别失败") }
             }
         }
+    }
+
+    /** Finds every library part in a still [frame] of a pile (takes a few seconds). */
+    fun scanPile(frame: Bitmap) {
+        pileJob?.cancel()
+        _pile.value = PileState(running = true)
+        pileJob = viewModelScope.launch {
+            _pile.value = try {
+                PileState(result = withContext(Dispatchers.Default) {
+                    pileScanner.scan(frame, parts.value) { p -> _pile.update { it.copy(progress = p) } }
+                })
+            } catch (e: Exception) {
+                PileState(error = e.message ?: "整堆识别失败")
+            }
+        }
+    }
+
+    fun clearPile() {
+        pileJob?.cancel()
+        _pile.value = PileState()
     }
 
     /** Adds [obj]'s crop from [frame] to [part]'s photos so future scans match it better. */
@@ -260,6 +296,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         ocr.close()
         embedder.close()
         finder.close()
+        pileJob?.cancel()
     }
 
     companion object {

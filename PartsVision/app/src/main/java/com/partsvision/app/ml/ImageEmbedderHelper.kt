@@ -7,7 +7,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.Rect
 import android.graphics.RectF
 import android.util.Log
 import java.nio.FloatBuffer
@@ -44,10 +43,9 @@ class ImageEmbedderHelper(context: Context) {
     private val square = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
 
-    /** Embeddings of the whole photo and (if found) its main object. */
-    fun embedPhoto(bitmap: Bitmap, mainObject: Rect?): List<FloatArray> =
-        listOfNotNull(bitmap, mainObject?.let { ObjectFinder.crop(bitmap, it) })
-            .map(::embed).filter { it.isNotEmpty() }
+    /** Embeddings of the whole photo plus extra views of it (e.g. the part cut out of its background). */
+    fun embedPhoto(bitmap: Bitmap, views: List<Bitmap>): List<FloatArray> =
+        (listOf(bitmap) + views).map(::embed).filter { it.isNotEmpty() }
 
     /** Unit-length embedding (cosine == dot product), or empty if the model is unavailable. */
     @Synchronized
@@ -100,7 +98,7 @@ class ImageEmbedderHelper(context: Context) {
         private const val PAD_COLOR = 0xFF7C7468.toInt() // ImageNet mean (124, 116, 104)
 
         /** Bump when the model or cropping changes so stored vectors get recomputed. */
-        const val VERSION = 4
+        const val VERSION = 5
 
         /** Best similarity over all crop pairs. */
         fun bestCosine(a: List<FloatArray>, b: List<FloatArray>): Float {
