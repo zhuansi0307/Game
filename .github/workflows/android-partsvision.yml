@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: PartsVision
@@ -26,3 +28,16 @@ jobs:
         with:
           name: PartsVision-debug-apk
           path: PartsVision/app/build/outputs/apk/debug/*.apk
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk PartsVision-build${{ github.run_number }}.apk
+      # Publishes the APK on the Releases page so it can be downloaded directly on a phone.
+      - name: Publish release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: partsvision-build${{ github.run_number }}
+          name: PartsVision 零件识别 (build ${{ github.run_number }})
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          body: 测试版 APK，下载后在手机上直接安装（需允许“安装未知来源应用”）。
+          files: PartsVision/PartsVision-build${{ github.run_number }}.apk
