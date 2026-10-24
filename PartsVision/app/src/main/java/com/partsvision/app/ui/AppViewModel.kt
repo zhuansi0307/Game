@@ -40,6 +40,8 @@ data class RecognizeState(
     val error: String? = null,
 )
 
+data class LiveAiState(val loading: Boolean = false, val verdict: AiVerdict? = null, val error: String? = null)
+
 data class SketchState(
     val generating: Boolean = false,
     val progressChars: Int = 0,
@@ -64,11 +66,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _live = MutableStateFlow<LiveResult?>(null)
     val live: StateFlow<LiveResult?> = _live.asStateFlow()
 
+    private val _liveAi = MutableStateFlow(LiveAiState())
+    val liveAi: StateFlow<LiveAiState> = _liveAi.asStateFlow()
+    private var liveScanner: LiveScanner? = null
+    private var lastAiAt = 0L
+    private var lastAiTopId: String? = null
+
+    /** True while stored photos are re-embedded after a model upgrade. */
+    private val _reindexing = MutableStateFlow(false)
+    val reindexing: StateFlow<Boolean> = _reindexing.asStateFlow()
+
     private var recognizeJob: Job? = null
     private var sketchJob: Job? = null
 
     init {
-        viewModelScope.launch { repo.load() }
+        viewModelScope.launch {
+            repo.load()
+            if (repo.embeddingVersion != ImageEmbedderHelper.VERSION) {
+                _reindexing.value = true
+                repo.reembed(ImageEmbedderHelper.VERSION) { embedder.embedCrops(ImageUtils.scaleDown(it, 1024)) }
+                _reindexing.value = false
+            }
+        }
     }
 
     suspend fun decode(uri: Uri): Bitmap? = withContext(Dispatchers.IO) { ImageUtils.decode(getApplication(), uri) }
@@ -77,10 +96,44 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Analyzer for the live camera; results are published on [live]. */
     fun newLiveScanner(): LiveScanner =
-        LiveScanner(embedder, ocr, parts = { parts.value }, onResult = { _live.value = it })
+        LiveScanner(embedder, ocr, parts = { parts.value }, onResult = ::onLiveResult).also { liveScanner = it }
 
     fun clearLive() {
         _live.value = null
+        _liveAi.value = LiveAiState()
+        lastAiTopId = null
+    }
+
+    private fun onLiveResult(result: LiveResult) {
+        _live.value = result
+        if (result.confident) {
+            lastAiTopId = null
+            if (_liveAi.value.verdict != null) _liveAi.value = LiveAiState()
+            return
+        }
+        // Not sure locally: ask the cloud model, at most once per scene and never more often than every few seconds.
+        val now = System.currentTimeMillis()
+        val topId = result.top?.match?.part?.id ?: ""
+        if (!settings.cloudAssist || !settings.hasApiKey || _liveAi.value.loading) return
+        if (now - lastAiAt < LIVE_AI_COOLDOWN_MS) return
+        if (topId == lastAiTopId && now - lastAiAt < LIVE_AI_REPEAT_MS) return
+        val frame = liveScanner?.lastFrame ?: return
+        lastAiAt = now
+        lastAiTopId = topId
+        _liveAi.value = LiveAiState(loading = true)
+        viewModelScope.launch {
+            _liveAi.value = try {
+                LiveAiState(verdict = identifyWithAi(frame, emptyList(), result.candidates.map { it.match }))
+            } catch (e: Exception) {
+                LiveAiState(error = e.message ?: "AI 识别失败")
+            }
+        }
+    }
+
+    /** Adds the current camera frame to [part]'s photos so future scans match it better. */
+    fun confirmLive(part: Part) {
+        val frame = liveScanner?.lastFrame ?: return
+        viewModelScope.launch { savePart(part.partNumber, "", "", listOf(frame)) }
     }
 
     fun recognize(photo: Bitmap) {
@@ -89,8 +142,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         recognizeJob = viewModelScope.launch {
             try {
                 val lines = runCatching { ocr.readLines(photo) }.getOrDefault(emptyList())
-                val embedding = withContext(Dispatchers.Default) { embedder.embed(photo) }
-                val matches = withContext(Dispatchers.Default) { PartMatcher.rank(parts.value, embedding, lines) }
+                val embeddings = withContext(Dispatchers.Default) { embedder.embedCrops(photo) }
+                val matches = withContext(Dispatchers.Default) { PartMatcher.rank(parts.value, embeddings, lines) }
                 _recognize.update { it.copy(analyzing = false, ocrLines = lines, matches = matches) }
                 if (settings.cloudAssist && settings.hasApiKey) askAi(photo, lines, matches)
             } catch (e: Exception) {
@@ -112,20 +165,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         _recognize.update { it.copy(aiLoading = true, error = null) }
         try {
-            val verdict = withContext(Dispatchers.IO) {
-                val references = matches.take(MAX_AI_CANDIDATES).map { m ->
-                    val ref = m.part.photos.firstOrNull()?.let { BitmapFactory.decodeFile(it.path) }
-                    ReferencePart(m.part.partNumber, m.part.name, ref?.let { ImageUtils.toBase64Jpeg(ImageUtils.scaleDown(it, 512), 80) })
-                }
-                val raw = ClaudeService(settings.apiKey, settings.model)
-                    .identifyPart(ImageUtils.toBase64Jpeg(ImageUtils.scaleDown(photo, 1024)), lines, references)
-                parseVerdict(raw)
-            }
+            val verdict = identifyWithAi(photo, lines, matches)
             _recognize.update { it.copy(aiLoading = false, ai = verdict) }
         } catch (e: Exception) {
             _recognize.update { it.copy(aiLoading = false, error = e.message ?: "AI 识别失败") }
         }
     }
+
+    private suspend fun identifyWithAi(photo: Bitmap, lines: List<String>, matches: List<MatchResult>): AiVerdict =
+        withContext(Dispatchers.IO) {
+            val references = matches.take(MAX_AI_CANDIDATES).map { m ->
+                val ref = m.part.photos.firstOrNull()?.let { BitmapFactory.decodeFile(it.path) }
+                ReferencePart(m.part.partNumber, m.part.name, ref?.let { ImageUtils.toBase64Jpeg(ImageUtils.scaleDown(it, 512), 80) })
+            }
+            val raw = ClaudeService(settings.apiKey, settings.model)
+                .identifyPart(ImageUtils.toBase64Jpeg(ImageUtils.scaleDown(photo, 1024)), lines, references)
+            parseVerdict(raw)
+        }
 
     private fun parseVerdict(raw: String): AiVerdict {
         val json = JSONObject(raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1))
@@ -147,7 +203,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Saves photos under [partNumber]; creates the part if needed. Returns the part id. */
     suspend fun savePart(partNumber: String, name: String, note: String, photos: List<Bitmap>): String {
         val withEmbeddings = withContext(Dispatchers.Default) {
-            photos.map { ImageUtils.scaleDown(it, 1024).let { b -> b to embedder.embed(b) } }
+            photos.map { ImageUtils.scaleDown(it, 1024).let { b -> b to embedder.embedCrops(b) } }
         }
         return repo.upsert(partNumber, name, note, withEmbeddings).id
     }
@@ -194,5 +250,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         private const val MAX_AI_CANDIDATES = 5
+        private const val LIVE_AI_COOLDOWN_MS = 8_000L
+        private const val LIVE_AI_REPEAT_MS = 30_000L
     }
 }

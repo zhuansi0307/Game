@@ -48,14 +48,14 @@ android {
     }
 }
 
-// On-device image embedding model (MobileNetV3, ~4 MB), fetched once into assets.
+// On-device image embedding model (MobileNetV3-Large, ~11 MB), fetched once into assets.
 val downloadModels by tasks.registering {
-    val target = file("src/main/assets/mobilenet_v3_small.tflite")
+    val target = file("src/main/assets/mobilenet_v3_large.tflite")
     outputs.file(target)
     doLast {
         if (!target.exists()) {
             target.parentFile.mkdirs()
-            URI("https://storage.googleapis.com/mediapipe-models/image_embedder/mobilenet_v3_small/float32/1/mobilenet_v3_small.tflite")
+            URI("https://storage.googleapis.com/mediapipe-models/image_embedder/mobilenet_v3_large/float32/1/mobilenet_v3_large.tflite")
                 .toURL().openStream().use { input -> target.outputStream().use { input.copyTo(it) } }
         }
     }

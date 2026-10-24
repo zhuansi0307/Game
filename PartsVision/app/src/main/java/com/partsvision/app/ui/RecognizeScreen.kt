@@ -1,5 +1,7 @@
 package com.partsvision.app.ui
 
+import android.widget.Toast
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -20,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FlashlightOff
 import androidx.compose.material.icons.filled.FlashlightOn
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -50,9 +53,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.partsvision.app.data.Part
+import com.partsvision.app.ml.LiveCandidate
 import com.partsvision.app.ml.LiveResult
 import com.partsvision.app.ml.MatchResult
 import java.io.File
@@ -80,6 +86,9 @@ private fun LiveScanView(
 ) {
     val parts by vm.parts.collectAsState()
     val live by vm.live.collectAsState()
+    val liveAi by vm.liveAi.collectAsState()
+    val reindexing by vm.reindexing.collectAsState()
+    val context = LocalContext.current
     val permission = rememberCameraPermission()
     val scanner = remember { vm.newLiveScanner() }
     var torchOn by rememberSaveable { mutableStateOf(false) }
@@ -107,7 +116,7 @@ private fun LiveScanView(
         CameraPreview(scanner, torchOn, Modifier.fillMaxSize())
 
         Text(
-            if (parts.isEmpty()) "零件库为空：请先到“零件库”录入零件号和实拍图" else "把零件放进画面中间，自动显示零件号",
+            if (parts.isEmpty()) "零件库为空：请先到“零件库”录入零件号和实拍图" else "把零件放在画面中间，结果实时显示在下方",
             Modifier.align(Alignment.TopCenter).padding(12.dp)
                 .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
                 .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -123,10 +132,17 @@ private fun LiveScanView(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            LiveResultCard(live, onOpenPart, onAddFromPhoto = { number ->
-                scanner.lastFrame?.let(vm::recognize)
-                onAddFromPhoto(number)
-            })
+            LiveResultCard(
+                live, liveAi, reindexing, onOpenPart,
+                onConfirm = { part ->
+                    vm.confirmLive(part)
+                    Toast.makeText(context, "已把当前画面加入 ${part.partNumber} 的样本，之后识别更准", Toast.LENGTH_SHORT).show()
+                },
+                onAddFromPhoto = { number ->
+                    scanner.lastFrame?.let(vm::recognize)
+                    onAddFromPhoto(number)
+                },
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
                     onClick = { scanner.lastFrame?.let(vm::recognize) },
@@ -134,7 +150,7 @@ private fun LiveScanView(
                 ) {
                     Icon(Icons.Default.CameraAlt, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(if (vm.settings.hasApiKey) "拍下 · AI 详细识别" else "拍下 · 查看候选")
+                    Text("定格 · 查看全部候选")
                 }
                 FilledTonalButton(onClick = picker.pickFromGallery) {
                     Icon(Icons.Default.PhotoLibrary, null, Modifier.size(18.dp))
@@ -154,50 +170,103 @@ private fun OutlinedPickFromGallery(picker: ImagePicker) {
 @Composable
 private fun LiveResultCard(
     live: LiveResult?,
+    ai: LiveAiState,
+    reindexing: Boolean,
     onOpenPart: (String) -> Unit,
+    onConfirm: (Part) -> Unit,
     onAddFromPhoto: (String) -> Unit,
 ) {
-    val match = live?.match
+    val top = live?.top
     val confident = live?.confident == true
-    val readNumber = live?.readNumber
+    val plausible = live?.plausible == true
+    val readNumber = live?.readNumber?.takeUnless { n -> top?.match?.isTextHit == true && top.match.matchedText == n }
     Card(
         Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (match != null && confident) MaterialTheme.colorScheme.primaryContainer
+            containerColor = if (confident) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
         ),
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (reindexing) Text("正在用新模型重建零件库索引，稍候识别会更准…", style = MaterialTheme.typography.bodySmall)
+            live?.problem?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+
             when {
-                match != null -> {
+                live == null -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text("正在启动相机…")
+                }
+                top != null && plausible -> {
                     Text(if (confident) "识别到零件号" else "可能是", style = MaterialTheme.typography.labelMedium)
-                    Text(match.part.partNumber, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    if (match.part.name.isNotBlank()) Text(match.part.name)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            if (match.isTextHit) "文字匹配 ${match.matchedText}" else "外观相似 ${(match.imageScore * 100).toInt()}%",
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f),
+                        Column(Modifier.weight(1f)) {
+                            Text(top.match.part.partNumber, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                            if (top.match.part.name.isNotBlank()) Text(top.match.part.name)
+                            Text(scoreText(top), style = MaterialTheme.typography.bodySmall)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            FilledTonalButton(onClick = { onConfirm(top.match.part) }) {
+                                Icon(Icons.Default.Check, null, Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("正确")
+                            }
+                            TextButton(onClick = { onOpenPart(top.match.part.id) }) { Text("详情") }
+                        }
+                    }
+                }
+                top != null -> {
+                    Text("零件库中没有把握的匹配", style = MaterialTheme.typography.titleSmall)
+                    Text("最接近：${top.match.part.partNumber}（${scoreText(top)}）", style = MaterialTheme.typography.bodySmall)
+                }
+                else -> Text("零件库为空，先去“零件库”录入零件", style = MaterialTheme.typography.titleSmall)
+            }
+
+            val others = live?.candidates.orEmpty().drop(1)
+            if (others.isNotEmpty() && plausible) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("其他：", style = MaterialTheme.typography.bodySmall, modifier = Modifier.align(Alignment.CenterVertically))
+                    others.forEach { c ->
+                        AssistChip(
+                            onClick = { onOpenPart(c.match.part.id) },
+                            label = { Text("${c.match.part.partNumber} ${(c.smoothedScore * 100).toInt()}%") },
                         )
-                        TextButton(onClick = { onOpenPart(match.part.id) }) { Text("查看详情") }
                     }
                 }
-                readNumber != null -> {
-                    Text("读到文字（零件库中没有）", style = MaterialTheme.typography.labelMedium)
-                    Text(readNumber, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    TextButton(onClick = { onAddFromPhoto(readNumber) }) { Text("按此零件号入库") }
+            }
+
+            if (readNumber != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("读到文字：$readNumber", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    TextButton(onClick = { onAddFromPhoto(readNumber) }) { Text("按此入库") }
                 }
-                else -> {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(10.dp))
-                        Text("正在识别…")
+            }
+
+            if (ai.loading || ai.verdict != null || ai.error != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.AutoAwesome, null, Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    when {
+                        ai.loading -> Text("AI 正在确认…", style = MaterialTheme.typography.bodySmall)
+                        ai.verdict != null -> Text(
+                            if (ai.verdict.partNumber.isBlank()) "AI：无法确定。${ai.verdict.reason}"
+                            else "AI：${ai.verdict.partNumber}（${ai.verdict.confidence}%）${ai.verdict.reason}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        else -> Text("AI：${ai.error}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                     }
                 }
+            }
+
+            if (live != null && live.frameMs > 0) {
+                Text("${live.frameMs} ms/帧", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
+
+private fun scoreText(c: LiveCandidate): String =
+    if (c.match.isTextHit) "文字匹配 ${c.match.matchedText}" else "外观相似 ${(c.smoothedScore * 100).toInt()}%"
 
 /** Detailed results for a captured frame or a gallery photo. */
 @Composable

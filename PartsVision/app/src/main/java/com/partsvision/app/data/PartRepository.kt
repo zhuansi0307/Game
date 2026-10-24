@@ -2,6 +2,7 @@ package com.partsvision.app.data
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,8 +18,8 @@ import java.util.UUID
 data class PartPhoto(
     val id: String,
     val path: String,
-    /** L2-normalized image embedding; empty if the embedder was unavailable. */
-    val embedding: FloatArray,
+    /** L2-normalized embeddings of several crops (full frame, centre); empty if the embedder was unavailable. */
+    val embeddings: List<FloatArray>,
 )
 
 data class Part(
@@ -41,6 +42,10 @@ class PartRepository(context: Context) {
     private val indexFile = File(root, "index.json")
     private val mutex = Mutex()
 
+    /** Embedding model version the stored vectors were computed with. */
+    var embeddingVersion = 0
+        private set
+
     private val _parts = MutableStateFlow<List<Part>>(emptyList())
     val parts: StateFlow<List<Part>> = _parts.asStateFlow()
 
@@ -60,15 +65,15 @@ class PartRepository(context: Context) {
         partNumber: String,
         name: String,
         note: String,
-        photos: List<Pair<Bitmap, FloatArray>>,
+        photos: List<Pair<Bitmap, List<FloatArray>>>,
     ): Part = withContext(Dispatchers.IO) {
         mutex.withLock {
             val number = partNumber.trim()
-            val saved = photos.map { (bitmap, embedding) ->
+            val saved = photos.map { (bitmap, embeddings) ->
                 val id = UUID.randomUUID().toString()
                 val file = File(photoDir, "$id.jpg")
                 file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }
-                PartPhoto(id, file.absolutePath, embedding)
+                PartPhoto(id, file.absolutePath, embeddings)
             }
             val current = _parts.value
             val existing = current.firstOrNull { it.partNumber.equals(number, ignoreCase = true) }
@@ -108,6 +113,25 @@ class PartRepository(context: Context) {
         }
     }
 
+    /** Recomputes every photo's embeddings, e.g. after the embedding model changes. */
+    suspend fun reembed(version: Int, embed: (Bitmap) -> List<FloatArray>) = withContext(Dispatchers.Default) {
+        val updated = _parts.value.map { part ->
+            part.copy(photos = part.photos.map { photo ->
+                val bitmap = BitmapFactory.decodeFile(photo.path)
+                photo.copy(embeddings = bitmap?.let(embed) ?: emptyList())
+            })
+        }
+        mutex.withLock {
+            // Keep photos added or removed while re-embedding ran.
+            val byId = updated.flatMap { it.photos }.associateBy { it.id }
+            val merged = _parts.value.map { part ->
+                part.copy(photos = part.photos.map { byId[it.id] ?: it })
+            }
+            embeddingVersion = version
+            withContext(Dispatchers.IO) { persist(merged) }
+        }
+    }
+
     private fun persist(list: List<Part>) {
         val tmp = File(root, "index.json.tmp")
         tmp.writeText(serialize(list))
@@ -115,7 +139,12 @@ class PartRepository(context: Context) {
         _parts.value = list
     }
 
-    private fun serialize(list: List<Part>): String = JSONArray().apply {
+    private fun serialize(list: List<Part>): String = JSONObject().apply {
+        put("embeddingVersion", embeddingVersion)
+        put("parts", serializeParts(list))
+    }.toString()
+
+    private fun serializeParts(list: List<Part>): JSONArray = JSONArray().apply {
         list.forEach { part ->
             put(JSONObject().apply {
                 put("id", part.id)
@@ -128,16 +157,20 @@ class PartRepository(context: Context) {
                         put(JSONObject().apply {
                             put("id", photo.id)
                             put("path", photo.path)
-                            put("embedding", JSONArray().apply { photo.embedding.forEach { put(it.toDouble()) } })
+                            put("embeddings", JSONArray().apply {
+                                photo.embeddings.forEach { e -> put(JSONArray().apply { e.forEach { put(it.toDouble()) } }) }
+                            })
                         })
                     }
                 })
             })
         }
-    }.toString()
+    }
 
     private fun parse(text: String): List<Part> {
-        val array = JSONArray(text)
+        // Version 0 files were a bare array with one embedding per photo.
+        val array = if (text.trimStart().startsWith("[")) JSONArray(text).also { embeddingVersion = 0 }
+        else JSONObject(text).let { embeddingVersion = it.optInt("embeddingVersion"); it.getJSONArray("parts") }
         return (0 until array.length()).map { i ->
             val o = array.getJSONObject(i)
             val photos = o.getJSONArray("photos")
@@ -149,11 +182,14 @@ class PartRepository(context: Context) {
                 createdAt = o.optLong("createdAt"),
                 photos = (0 until photos.length()).map { j ->
                     val p = photos.getJSONObject(j)
-                    val e = p.getJSONArray("embedding")
+                    val list = p.optJSONArray("embeddings")
                     PartPhoto(
                         id = p.getString("id"),
                         path = p.getString("path"),
-                        embedding = FloatArray(e.length()) { k -> e.getDouble(k).toFloat() },
+                        embeddings = if (list == null) emptyList() else (0 until list.length()).map { k ->
+                            val e = list.getJSONArray(k)
+                            FloatArray(e.length()) { n -> e.getDouble(n).toFloat() }
+                        },
                     )
                 },
             )

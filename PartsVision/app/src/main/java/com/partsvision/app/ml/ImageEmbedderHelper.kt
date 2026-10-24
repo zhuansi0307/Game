@@ -10,8 +10,11 @@ import com.google.mediapipe.tasks.vision.imageembedder.ImageEmbedder
 import kotlin.math.sqrt
 
 /**
- * On-device image feature extractor (MobileNetV3 via MediaPipe). Photos of the same part
+ * On-device image feature extractor (MobileNetV3-Large via MediaPipe). Photos of the same part
  * produce nearby vectors, so a cosine-similarity search over the library finds matches offline.
+ *
+ * Each image is embedded as several crops (whole frame + centre) because a part held in the
+ * hand often fills only the middle of the frame; comparing crop pairs ignores more background.
  */
 class ImageEmbedderHelper(context: Context) {
     private val embedder: ImageEmbedder? = try {
@@ -29,6 +32,10 @@ class ImageEmbedderHelper(context: Context) {
 
     val isAvailable: Boolean get() = embedder != null
 
+    /** Embeddings of the whole image and of its centre, in that order. */
+    fun embedCrops(bitmap: Bitmap): List<FloatArray> =
+        listOf(bitmap, centerCrop(bitmap, CENTER_FRACTION)).map(::embed).filter { it.isNotEmpty() }
+
     @Synchronized
     fun embed(bitmap: Bitmap): FloatArray {
         val e = embedder ?: return FloatArray(0)
@@ -41,7 +48,23 @@ class ImageEmbedderHelper(context: Context) {
 
     companion object {
         private const val TAG = "ImageEmbedder"
-        private const val MODEL_ASSET = "mobilenet_v3_small.tflite"
+        private const val MODEL_ASSET = "mobilenet_v3_large.tflite"
+
+        /** Bump when the model or cropping changes so stored vectors get recomputed. */
+        const val VERSION = 2
+        private const val CENTER_FRACTION = 0.6f
+
+        fun centerCrop(bitmap: Bitmap, fraction: Float): Bitmap {
+            val side = (minOf(bitmap.width, bitmap.height) * fraction).toInt().coerceAtLeast(1)
+            return Bitmap.createBitmap(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side)
+        }
+
+        /** Best similarity over all crop pairs. */
+        fun bestCosine(a: List<FloatArray>, b: List<FloatArray>): Float {
+            var best = 0f
+            for (x in a) for (y in b) best = maxOf(best, cosine(x, y))
+            return best
+        }
 
         fun cosine(a: FloatArray, b: FloatArray): Float {
             if (a.isEmpty() || a.size != b.size) return 0f

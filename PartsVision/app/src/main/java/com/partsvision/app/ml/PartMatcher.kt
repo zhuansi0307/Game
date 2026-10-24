@@ -24,13 +24,13 @@ object PartMatcher {
 
     fun rank(
         parts: List<Part>,
-        queryEmbedding: FloatArray,
+        queryEmbeddings: List<FloatArray>,
         ocrLines: List<String>,
         limit: Int = 8,
     ): List<MatchResult> {
         val tokens = OcrHelper.partNumberCandidates(ocrLines)
         return parts.map { part ->
-            val image = part.photos.maxOfOrNull { ImageEmbedderHelper.cosine(queryEmbedding, it.embedding) } ?: 0f
+            val image = part.photos.maxOfOrNull { ImageEmbedderHelper.bestCosine(queryEmbeddings, it.embeddings) } ?: 0f
             var bestText = 0f
             var bestToken: String? = null
             for (token in tokens) {
