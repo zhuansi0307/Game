@@ -1,0 +1,9 @@
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+.kotlin/
+captures/
+# Downloaded at build time by the downloadModels task
+app/src/main/assets/*.tflite
