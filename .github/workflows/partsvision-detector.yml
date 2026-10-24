@@ -1,0 +1,33 @@
+name: PartsVision detector model
+
+# Exports FastSAM-s to ONNX and publishes it as a release asset that the app build downloads.
+on:
+  push:
+    paths: ["PartsVision/tools/export_fastsam.py", ".github/workflows/partsvision-detector.yml"]
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install ultralytics onnx onnxslim onnxruntime
+      - name: Export
+        working-directory: PartsVision/tools
+        run: python export_fastsam.py
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: model-fastsam-s-v1
+          name: PartsVision detector model (FastSAM-s)
+          prerelease: true
+          body: Class-agnostic object proposer used by the PartsVision app build.
+          files: PartsVision/tools/fastsam_s_512.onnx
