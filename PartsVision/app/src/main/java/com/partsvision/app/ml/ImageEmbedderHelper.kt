@@ -49,13 +49,40 @@ class ImageEmbedderHelper(context: Context) {
     private val square = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
 
+    /** Overall fingerprint plus region features of one image. */
+    class Features(val embedding: FloatArray, val regions: Regions)
+
+    /** What the library stores for one reference photo. */
+    class PhotoFeatures(val embeddings: List<FloatArray>, val regions: List<Regions>)
+
     /**
-     * Library-side embeddings of a reference photo: the part cut out of its background when it
+     * Library-side features of a reference photo: the part cut out of its background when it
      * could be found ([cutouts]), otherwise the whole photo. The whole photo is deliberately not
      * kept alongside a cut-out — it is mostly table/tray and would then "match" background.
+     * Region features are stored in four orientations, because patch features are not
+     * rotation-invariant and a part can lie any way round.
      */
-    fun embedPhoto(bitmap: Bitmap, cutouts: List<Bitmap>): List<FloatArray> =
-        cutouts.ifEmpty { listOf(bitmap) }.map(::embed).filter { it.isNotEmpty() }
+    fun embedPhoto(bitmap: Bitmap, cutouts: List<Bitmap>): PhotoFeatures {
+        val views = cutouts.ifEmpty { listOf(bitmap) }
+        val embeddings = views.map(::embed).filter { it.isNotEmpty() }
+        val main = views.first()
+        val regions = listOf(0f, 90f, 180f, 270f).mapNotNull { angle ->
+            val rotated = if (angle == 0f) main else Bitmap.createBitmap(
+                main, 0, 0, main.width, main.height, android.graphics.Matrix().apply { postRotate(angle) }, true,
+            )
+            features(rotated)?.regions
+        }
+        return PhotoFeatures(embeddings, regions)
+    }
+
+    /** Fingerprint and region features in one model run, or null if the model is unavailable. */
+    @Synchronized
+    fun features(bitmap: Bitmap): Features? {
+        val (raw, patches) = run(bitmap) ?: return null
+        // Regions first: they read this run's letterboxed pixels, which removeGrey's first call would overwrite.
+        val regions = regionsOnPart(patches)
+        return Features(removeGrey(raw), regions)
+    }
 
     /**
      * Embedding of a plain grey image. Cut-outs are padded with this grey, and two mostly-grey
@@ -63,13 +90,14 @@ class ImageEmbedderHelper(context: Context) {
      * embedding stops e.g. a piece of cardboard "matching" a fitting.
      */
     private val greyDirection: FloatArray? by lazy {
-        rawEmbed(Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888).apply { eraseColor(PAD_COLOR) })
+        run(Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888).apply { eraseColor(PAD_COLOR) })?.first
     }
 
     /** Unit-length embedding (cosine == dot product), or empty if the model is unavailable. */
     @Synchronized
-    fun embed(bitmap: Bitmap): FloatArray {
-        val v = rawEmbed(bitmap) ?: return FloatArray(0)
+    fun embed(bitmap: Bitmap): FloatArray = run(bitmap)?.first?.let(::removeGrey) ?: FloatArray(0)
+
+    private fun removeGrey(v: FloatArray): FloatArray {
         val g = greyDirection ?: return v
         var dot = 0f
         for (i in v.indices) dot += v[i] * g[i]
@@ -81,8 +109,30 @@ class ImageEmbedderHelper(context: Context) {
         return v
     }
 
+    /**
+     * Patch tokens of the 16x16 grid that lie on the part: a patch counts when at least 30% of
+     * its pixels differ from the grey cut-out/letterbox background. At most [MAX_REGIONS] kept.
+     */
+    private fun regionsOnPart(patches: Array<FloatArray>): Regions {
+        val grid = SIZE / PATCH
+        val onPart = ArrayList<FloatArray>()
+        for (py in 0 until grid) for (px in 0 until grid) {
+            var fg = 0
+            for (y in py * PATCH until (py + 1) * PATCH) for (x in px * PATCH until (px + 1) * PATCH) {
+                val c = pixels[y * SIZE + x]
+                val d = kotlin.math.abs(((c shr 16) and 0xFF) - 124) + kotlin.math.abs(((c shr 8) and 0xFF) - 116) + kotlin.math.abs((c and 0xFF) - 104)
+                if (d > 24) fg++
+            }
+            if (fg > PATCH * PATCH * 0.3f) onPart += patches[py * grid + px]
+        }
+        val kept = if (onPart.size <= MAX_REGIONS) onPart
+        else List(MAX_REGIONS) { i -> onPart[i * onPart.size / MAX_REGIONS] }
+        return Regions.quantize(kept)
+    }
+
+    /** Runs the model: (unit-length embedding, patch tokens), or null if unavailable. */
     @Synchronized
-    private fun rawEmbed(bitmap: Bitmap): FloatArray? {
+    private fun run(bitmap: Bitmap): Pair<FloatArray, Array<FloatArray>>? {
         val s = session ?: return null
         letterbox(bitmap)
         square.getPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE)
@@ -102,7 +152,9 @@ class ImageEmbedderHelper(context: Context) {
                 for (x in v) norm += x * x
                 norm = sqrt(norm)
                 if (norm > 0f) for (i in v.indices) v[i] /= norm
-                return v
+                @Suppress("UNCHECKED_CAST")
+                val patches = (result.get(1).value as Array<Array<FloatArray>>)[0]
+                return v to patches
             }
         }
     }
@@ -136,7 +188,9 @@ class ImageEmbedderHelper(context: Context) {
         private const val PAD_COLOR = 0xFF7C7468.toInt() // ImageNet mean (124, 116, 104)
 
         /** Bump when the model or cropping changes so stored vectors get recomputed. */
-        const val VERSION = 6
+        const val VERSION = 7
+        private const val PATCH = 14
+        private const val MAX_REGIONS = 64
 
         /** Best similarity over all crop pairs. */
         fun bestCosine(a: List<FloatArray>, b: List<FloatArray>): Float {

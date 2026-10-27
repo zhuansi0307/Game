@@ -42,9 +42,30 @@ object Calibration {
 
     fun isConfident(best: Float, secondBest: Float?): Boolean =
         best >= CONFIDENT && best - (secondBest ?: 0f) >= MARGIN
+
+    /** Library parts within this overall-similarity window of the best are compared region by region. */
+    const val RERANK_WINDOW = 0.10f
+    /** Region-score lead needed to call one of two look-alike parts confidently. */
+    const val REGION_MARGIN = 0.03f
 }
 
 object PartMatcher {
+
+    /**
+     * For library parts that are about as similar overall as the best one, how well they match
+     * region by region (see [Regions]); empty when there is no close contender, since then the
+     * overall similarity already decides.
+     */
+    fun regionScores(query: Regions?, ranked: List<MatchResult>): Map<String, Float> {
+        if (query == null || query.count == 0) return emptyMap()
+        val best = ranked.maxOfOrNull { it.imageScore } ?: return emptyMap()
+        val close = ranked
+            .filter { best - it.imageScore <= Calibration.RERANK_WINDOW && it.imageScore >= Calibration.MAYBE - 0.05f }
+            .sortedByDescending { it.imageScore }
+            .take(4)
+        if (close.size < 2) return emptyMap()
+        return close.associate { m -> m.part.id to (m.part.photos.maxOfOrNull { Regions.score(query, it.regions) } ?: 0f) }
+    }
 
     fun rank(
         parts: List<Part>,

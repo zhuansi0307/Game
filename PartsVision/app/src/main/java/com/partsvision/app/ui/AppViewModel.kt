@@ -103,14 +103,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             repo.load()
             if (repo.embeddingVersion != ImageEmbedderHelper.VERSION) {
                 _reindexing.value = true
-                repo.reembed(ImageEmbedderHelper.VERSION) { photoEmbeddings(ImageUtils.scaleDown(it, 1024)) }
+                repo.reembed(ImageEmbedderHelper.VERSION) { photoFeatures(ImageUtils.scaleDown(it, 1024)) }
                 _reindexing.value = false
             }
         }
     }
 
     /** Library-side features of a still photo; blocking, call off the main thread. */
-    private fun photoEmbeddings(photo: Bitmap): List<FloatArray> {
+    private fun photoFeatures(photo: Bitmap): ImageEmbedderHelper.PhotoFeatures {
         // The part cut out of its background, matching how live and pile scans cut out candidates.
         val cutouts = runCatching { finder.mainObject(photo) }.getOrNull()?.let { (set, p) ->
             listOf(finder.maskedCrop(photo, set, p))
@@ -191,8 +191,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         recognizeJob = viewModelScope.launch {
             try {
                 val lines = runCatching { ocr.readLines(photo) }.getOrDefault(emptyList())
-                val embeddings = withContext(Dispatchers.Default) { photoEmbeddings(photo) }
-                val matches = withContext(Dispatchers.Default) { PartMatcher.rank(parts.value, embeddings, lines) }
+                val matches = withContext(Dispatchers.Default) {
+                    val features = photoFeatures(photo)
+                    val ranked = PartMatcher.rank(parts.value, features.embeddings, lines)
+                    // Look-alike parts are ordered by the region-by-region comparison.
+                    val regions = PartMatcher.regionScores(features.regions.firstOrNull(), ranked)
+                    ranked.sortedByDescending { m -> regions[m.part.id]?.let { 2f + it } ?: m.score }
+                }
                 _recognize.update { it.copy(analyzing = false, ocrLines = lines, matches = matches) }
                 if (settings.cloudAssist && settings.hasApiKey) askAi(photo, lines, matches)
             } catch (e: Exception) {
@@ -252,7 +257,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Saves photos under [partNumber]; creates the part if needed. Returns the part id. */
     suspend fun savePart(partNumber: String, name: String, note: String, photos: List<Bitmap>): String {
         val withEmbeddings = withContext(Dispatchers.Default) {
-            photos.map { ImageUtils.scaleDown(it, 1024).let { b -> b to photoEmbeddings(b) } }
+            photos.map { ImageUtils.scaleDown(it, 1024).let { b -> b to photoFeatures(b) } }
         }
         return repo.upsert(partNumber, name, note, withEmbeddings).id
     }

@@ -10,7 +10,12 @@ import androidx.camera.core.ImageProxy
 import com.partsvision.app.data.Part
 
 /** A library part with its appearance similarity (raw cosine) smoothed over recent frames. */
-data class LiveCandidate(val match: MatchResult, val smoothedScore: Float) {
+data class LiveCandidate(
+    val match: MatchResult,
+    val smoothedScore: Float,
+    /** Region-by-region score, present when this part had a close look-alike in the library. */
+    val regionScore: Float? = null,
+) {
     /** 0..1 for display: text hits count fully, appearance goes through [Calibration]. */
     val confidence: Float get() =
         if (match.isTextHit) maxOf(match.textScore, Calibration.confidence(smoothedScore)) else Calibration.confidence(smoothedScore)
@@ -34,7 +39,14 @@ data class DetectedPart(
     /** Top candidate is a text hit, or clearly ahead of the runner-up on appearance. */
     val confident: Boolean get() {
         val t = top ?: return false
-        return t.match.isTextHit || Calibration.isConfident(t.smoothedScore, candidates.getOrNull(1)?.smoothedScore)
+        if (t.match.isTextHit) return true
+        val second = candidates.getOrNull(1)
+        // Look-alike parts: overall similarity cannot separate them, the region comparison decides.
+        if (t.regionScore != null && second?.regionScore != null) {
+            return maxOf(t.smoothedScore, second.smoothedScore) >= Calibration.CONFIDENT &&
+                t.regionScore - second.regionScore >= Calibration.REGION_MARGIN
+        }
+        return Calibration.isConfident(t.smoothedScore, second?.smoothedScore)
     }
 
     /** Worth labelling as "maybe" even when not confident. */
@@ -78,8 +90,10 @@ class LiveScanner(
     private val tracker = BoxTracker()
     /** tracking key → (part id → smoothed score) */
     private val smoothed = HashMap<Int, HashMap<String, Float>>()
-    /** tracking key → (embedding, when it was computed) */
-    private val embeddings = HashMap<Int, Pair<FloatArray, Long>>()
+    /** What was computed for a tracked object when it was (re)identified. */
+    private class Identified(val embedding: FloatArray, val at: Long, val regionScores: Map<String, Float>)
+    /** tracking key → identification */
+    private val embeddings = HashMap<Int, Identified>()
     /** tracking key → last result, shown while the detector briefly loses the object */
     private val lastResults = HashMap<Int, DetectedPart>()
 
@@ -103,21 +117,22 @@ class LiveScanner(
             val now = SystemClock.elapsedRealtime()
             val keys = tracker.assign(proposals.map { it.box }, now)
 
+            val library = parts()
             t = SystemClock.elapsedRealtime()
-            val embedded = refreshEmbeddings(frame, set, proposals, keys, now)
+            val embedded = refreshEmbeddings(frame, set, proposals, keys, now, library)
             val embedMs = SystemClock.elapsedRealtime() - t
 
-            val library = parts()
             val seen = proposals.mapIndexed { i, p ->
                 val key = keys[i]
                 val texts = lastLines.filter { line -> line.box?.let { p.box.contains(it.centerX(), it.centerY()) } ?: false }
                     .map { it.text }
-                val query = embeddings[key]?.first?.takeIf { it.isNotEmpty() }
+                val id = embeddings[key]
+                val query = id?.embedding?.takeIf { it.isNotEmpty() }
                 DetectedPart(
                     key = key,
                     box = p.box,
                     candidates = if (query == null && texts.isEmpty()) lastResults[key]?.candidates.orEmpty()
-                    else smooth(key, PartMatcher.rank(library, listOfNotNull(query), texts, limit = MAX_CANDIDATES)),
+                    else smooth(key, PartMatcher.rank(library, listOfNotNull(query), texts, limit = MAX_CANDIDATES), id?.regionScores.orEmpty()),
                     readNumber = OcrHelper.partNumberCandidates(texts).maxByOrNull { it.length },
                     isFallback = set == null,
                 ).also { lastResults[key] = it }
@@ -142,7 +157,7 @@ class LiveScanner(
                         !finder.isAvailable -> "物体检测模型加载失败，只识别画面中心"
                         else -> null
                     },
-                    timing = "检测 ${detectMs}ms · 比对 ${embedded}个 ${embedMs}ms" + if (ocrMs > 5) " · 读字 ${ocrMs}ms" else "",
+                    timing = "检测(${finder.backend(LIVE_SIZE)}) ${detectMs}ms · 比对 ${embedded}个 ${embedMs}ms" + if (ocrMs > 5) " · 读字 ${ocrMs}ms" else "",
                 )
             )
         } catch (t: Throwable) {
@@ -158,19 +173,24 @@ class LiveScanner(
      * Objects are identified once, when they first appear, and afterwards only re-checked every
      * [REFRESH_MS]; new objects go first. Returns how many were embedded this frame.
      */
-    private fun refreshEmbeddings(frame: Bitmap, set: ProposalSet?, proposals: List<Proposal>, keys: List<Int>, now: Long): Int {
+    private fun refreshEmbeddings(
+        frame: Bitmap, set: ProposalSet?, proposals: List<Proposal>, keys: List<Int>, now: Long, library: List<Part>,
+    ): Int {
         val due = proposals.indices
-            .filter { i -> embeddings[keys[i]]?.let { now - it.second > REFRESH_MS } ?: true }
-            .sortedWith(compareBy<Int> { i -> embeddings[keys[i]]?.second ?: Long.MIN_VALUE }.thenByDescending { proposals[it].area })
+            .filter { i -> embeddings[keys[i]]?.let { now - it.at > REFRESH_MS } ?: true }
+            .sortedWith(compareBy<Int> { i -> embeddings[keys[i]]?.at ?: Long.MIN_VALUE }.thenByDescending { proposals[it].area })
             .take(MAX_EMBEDS_PER_FRAME)
         due.forEach { i ->
             val crop = if (set != null) finder.maskedCrop(frame, set, proposals[i]) else ObjectFinder.crop(frame, proposals[i].box)
-            embeddings[keys[i]] = embedder.embed(crop) to now
+            val f = embedder.features(crop)
+            val emb = f?.embedding ?: FloatArray(0)
+            val ranked = if (emb.isEmpty()) emptyList() else PartMatcher.rank(library, listOf(emb), emptyList(), limit = MAX_CANDIDATES)
+            embeddings[keys[i]] = Identified(emb, now, PartMatcher.regionScores(f?.regions, ranked))
         }
         return due.size
     }
 
-    private fun smooth(key: Int, ranked: List<MatchResult>): List<LiveCandidate> {
+    private fun smooth(key: Int, ranked: List<MatchResult>, regionScores: Map<String, Float>): List<LiveCandidate> {
         val scores = smoothed.getOrPut(key) { HashMap() }
         val seen = HashSet<String>()
         val result = ranked.map { m ->
@@ -178,10 +198,14 @@ class LiveScanner(
             val prev = scores[m.part.id] ?: m.imageScore
             val s = prev + SMOOTHING * (m.imageScore - prev)
             scores[m.part.id] = s
-            LiveCandidate(m, s)
+            LiveCandidate(m, s, regionScores[m.part.id])
         }
         scores.keys.retainAll(seen)
-        return result.sortedWith(compareByDescending<LiveCandidate> { it.match.isTextHit }.thenByDescending { it.smoothedScore })
+        // Among look-alikes (those with a region score) the region comparison decides the order.
+        return result.sortedWith(
+            compareByDescending<LiveCandidate> { it.match.isTextHit }
+                .thenByDescending { it.regionScore?.let { r -> 1f + r } ?: it.smoothedScore }
+        )
     }
 
     private fun upright(image: ImageProxy): Bitmap {

@@ -12,15 +12,28 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import com.partsvision.app.ml.ImageEmbedderHelper
+import com.partsvision.app.ml.Regions
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.DataInputStream
+import java.io.DataOutputStream
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.util.UUID
 
 data class PartPhoto(
     val id: String,
     val path: String,
-    /** L2-normalized embeddings of several crops (full frame, centre); empty if the embedder was unavailable. */
+    /** L2-normalized embeddings of the photo's views; empty if the embedder was unavailable. */
     val embeddings: List<FloatArray>,
-)
+    /** Region features in four orientations, for telling near-identical parts apart (see [Regions]). */
+    val regions: List<Regions> = emptyList(),
+) {
+    /** Region features live in a binary file next to the JPEG (too bulky for the JSON index). */
+    val regionsFile: File get() = File(path.removeSuffix(".jpg") + ".regions")
+}
 
 data class Part(
     val id: String,
@@ -51,7 +64,9 @@ class PartRepository(context: Context) {
 
     suspend fun load() = withContext(Dispatchers.IO) {
         mutex.withLock {
-            _parts.value = if (indexFile.exists()) parse(indexFile.readText()) else emptyList()
+            _parts.value = if (indexFile.exists()) {
+                parse(indexFile.readText()).map { part -> part.copy(photos = part.photos.map(::readRegions)) }
+            } else emptyList()
         }
     }
 
@@ -65,15 +80,15 @@ class PartRepository(context: Context) {
         partNumber: String,
         name: String,
         note: String,
-        photos: List<Pair<Bitmap, List<FloatArray>>>,
+        photos: List<Pair<Bitmap, ImageEmbedderHelper.PhotoFeatures>>,
     ): Part = withContext(Dispatchers.IO) {
         mutex.withLock {
             val number = partNumber.trim()
-            val saved = photos.map { (bitmap, embeddings) ->
+            val saved = photos.map { (bitmap, features) ->
                 val id = UUID.randomUUID().toString()
                 val file = File(photoDir, "$id.jpg")
                 file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }
-                PartPhoto(id, file.absolutePath, embeddings)
+                PartPhoto(id, file.absolutePath, features.embeddings, features.regions).also(::writeRegions)
             }
             val current = _parts.value
             val existing = current.firstOrNull { it.partNumber.equals(number, ignoreCase = true) }
@@ -96,7 +111,7 @@ class PartRepository(context: Context) {
     suspend fun delete(partId: String) = withContext(Dispatchers.IO) {
         mutex.withLock {
             val part = _parts.value.firstOrNull { it.id == partId } ?: return@withLock
-            part.photos.forEach { File(it.path).delete() }
+            part.photos.forEach { File(it.path).delete(); it.regionsFile.delete() }
             persist(_parts.value.filterNot { it.id == partId })
         }
     }
@@ -106,7 +121,7 @@ class PartRepository(context: Context) {
             val list = _parts.value.map { part ->
                 if (part.id != partId) part
                 else part.copy(photos = part.photos.filterNot { photo ->
-                    (photo.id == photoId).also { if (it) File(photo.path).delete() }
+                    (photo.id == photoId).also { if (it) { File(photo.path).delete(); photo.regionsFile.delete() } }
                 })
             }
             persist(list)
@@ -114,11 +129,12 @@ class PartRepository(context: Context) {
     }
 
     /** Recomputes every photo's embeddings, e.g. after the embedding model changes. */
-    suspend fun reembed(version: Int, embed: (Bitmap) -> List<FloatArray>) = withContext(Dispatchers.Default) {
+    suspend fun reembed(version: Int, embed: (Bitmap) -> ImageEmbedderHelper.PhotoFeatures) = withContext(Dispatchers.Default) {
         val updated = _parts.value.map { part ->
             part.copy(photos = part.photos.map { photo ->
-                val bitmap = BitmapFactory.decodeFile(photo.path)
-                photo.copy(embeddings = bitmap?.let(embed) ?: emptyList())
+                val features = BitmapFactory.decodeFile(photo.path)?.let(embed)
+                photo.copy(embeddings = features?.embeddings.orEmpty(), regions = features?.regions.orEmpty())
+                    .also(::writeRegions)
             })
         }
         mutex.withLock {
@@ -130,6 +146,25 @@ class PartRepository(context: Context) {
             embeddingVersion = version
             withContext(Dispatchers.IO) { persist(merged) }
         }
+    }
+
+    private fun writeRegions(photo: PartPhoto) {
+        runCatching {
+            DataOutputStream(BufferedOutputStream(FileOutputStream(photo.regionsFile))).use { out ->
+                out.writeInt(photo.regions.size)
+                photo.regions.forEach { it.write(out) }
+            }
+        }
+    }
+
+    private fun readRegions(photo: PartPhoto): PartPhoto {
+        val file = photo.regionsFile
+        if (!file.exists()) return photo
+        return runCatching {
+            DataInputStream(BufferedInputStream(FileInputStream(file))).use { input ->
+                photo.copy(regions = List(input.readInt()) { Regions.read(input) })
+            }
+        }.getOrDefault(photo)
     }
 
     private fun persist(list: List<Part>) {

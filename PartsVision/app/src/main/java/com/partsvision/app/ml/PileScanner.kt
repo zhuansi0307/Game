@@ -28,7 +28,14 @@ class PileResult(val frame: Bitmap, val detections: List<PileDetection>, val pro
  */
 class PileScanner(private val embedder: ImageEmbedderHelper, private val finder: ObjectFinder) {
 
-    private class Candidate(val proposal: Proposal, val part: Part?, val best: Float, val second: Float)
+    private class Candidate(
+        val proposal: Proposal, val part: Part?, val best: Float, val second: Float,
+        /** Set when look-alike parts were separated region by region. */
+        val regionLead: Float? = null,
+    ) {
+        val confident: Boolean get() = if (regionLead != null) best >= Calibration.CONFIDENT && regionLead >= Calibration.REGION_MARGIN
+        else Calibration.isConfident(best, second)
+    }
 
     fun scan(frame: Bitmap, library: List<Part>, onProgress: (Float) -> Unit): PileResult {
         val start = System.currentTimeMillis()
@@ -38,12 +45,20 @@ class PileScanner(private val embedder: ImageEmbedderHelper, private val finder:
         var done = 0
 
         fun score(p: Proposal): Candidate {
-            val e = embedder.embed(finder.maskedCrop(frame, set, p))
+            val f = embedder.features(finder.maskedCrop(frame, set, p))
             onProgress((++done).toFloat() / total)
-            val perPart = library.map { part ->
-                part to (part.photos.maxOfOrNull { ImageEmbedderHelper.bestCosine(listOf(e), it.embeddings) } ?: 0f)
-            }.sortedByDescending { it.second }
-            return Candidate(p, perPart.getOrNull(0)?.first, perPart.getOrNull(0)?.second ?: 0f, perPart.getOrNull(1)?.second ?: 0f)
+            val e = f?.embedding ?: FloatArray(0)
+            val ranked = PartMatcher.rank(library, listOf(e), emptyList(), limit = 4).sortedByDescending { it.imageScore }
+            val top = ranked.getOrNull(0) ?: return Candidate(p, null, 0f, 0f)
+            val second = ranked.getOrNull(1)?.imageScore ?: 0f
+            // Look-alikes: let the region-by-region comparison pick between them.
+            val regions = PartMatcher.regionScores(f?.regions, ranked)
+            if (regions.size >= 2) {
+                val byRegion = regions.entries.sortedByDescending { it.value }
+                val winner = ranked.first { it.part.id == byRegion[0].key }
+                return Candidate(p, winner.part, winner.imageScore, second, byRegion[0].value - byRegion[1].value)
+            }
+            return Candidate(p, top.part, top.imageScore, second)
         }
 
         val scored = singles.map(::score).toMutableList()
@@ -69,7 +84,7 @@ class PileScanner(private val embedder: ImageEmbedderHelper, private val finder:
         }
         return PileResult(
             frame,
-            kept.map { PileDetection(it.proposal.box, it.part!!, it.best, Calibration.isConfident(it.best, it.second)) },
+            kept.map { PileDetection(it.proposal.box, it.part!!, it.best, it.confident) },
             singles.size,
             System.currentTimeMillis() - start,
         )

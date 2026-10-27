@@ -3,6 +3,7 @@ package com.partsvision.app.ml
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
+import ai.onnxruntime.providers.NNAPIFlags
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -53,15 +54,63 @@ const val PILE_SIZE = 512
  */
 class ObjectFinder(context: Context) {
     private val env: OrtEnvironment? = runCatching { OrtEnvironment.getEnvironment() }.getOrNull()
-    private val session: OrtSession? = try {
-        val bytes = context.assets.open(MODEL_ASSET).use { it.readBytes() }
-        env?.createSession(bytes, sessionOptions())
+    private val modelBytes: ByteArray? = runCatching { context.assets.open(MODEL_ASSET).use { it.readBytes() } }.getOrNull()
+
+    /** CPU session (XNNPACK when available); accepts any input size. */
+    private val cpuSession: OrtSession? = try {
+        modelBytes?.let { env?.createSession(it, cpuOptions()) }
     } catch (t: Throwable) {
         Log.e(TAG, "Object proposer unavailable", t)
         null
     }
 
-    val isAvailable: Boolean get() = session != null
+    val isAvailable: Boolean get() = cpuSession != null
+
+    /** Per input size: the session that ran faster on this phone, and its name for the timing line. */
+    private val chosen = HashMap<Int, Pair<OrtSession, String>>()
+
+    /** "GPU/NPU" or "CPU" for the given input size, once chosen. */
+    fun backend(size: Int): String = chosen[size]?.second ?: "CPU"
+
+    /**
+     * The first time a size is used, also try NNAPI (the phone's GPU / NPU / DSP), time both on
+     * a few runs and keep the faster. NNAPI quality differs a lot between phone makers — on
+     * some it is several times faster, on others slower than the CPU or missing — so measuring
+     * on the device is the only reliable choice. NNAPI needs fixed input sizes, hence one
+     * session per size.
+     */
+    private fun sessionFor(size: Int): OrtSession? {
+        chosen[size]?.let { return it.first }
+        val cpu = cpuSession ?: return null
+        val nnapi = try {
+            modelBytes?.let { env?.createSession(it, nnapiOptions(size)) }
+        } catch (t: Throwable) {
+            Log.w(TAG, "NNAPI unavailable", t)
+            null
+        }
+        val pick = if (nnapi == null) cpu to "CPU" else {
+            val cpuMs = timeRuns(cpu, size)
+            val nnapiMs = timeRuns(nnapi, size)
+            Log.i(TAG, "size $size: CPU ${cpuMs}ms, NNAPI ${nnapiMs}ms")
+            if (nnapiMs < cpuMs) nnapi to "GPU/NPU" else { nnapi.close(); cpu to "CPU" }
+        }
+        chosen[size] = pick
+        return pick.first
+    }
+
+    private fun timeRuns(session: OrtSession, size: Int): Long = try {
+        val zeros = FloatBuffer.allocate(3 * size * size)
+        OnnxTensor.createTensor(env, zeros, longArrayOf(1, 3, size.toLong(), size.toLong())).use { t ->
+            val input = mapOf(session.inputNames.first() to t)
+            session.run(input).close() // warm-up (NNAPI compiles on first run)
+            val start = System.nanoTime()
+            repeat(3) { session.run(input).close() }
+            (System.nanoTime() - start) / 3_000_000
+        }
+    } catch (t: Throwable) {
+        Log.w(TAG, "Benchmark failed", t)
+        Long.MAX_VALUE
+    }
 
     /** Reusable input buffers per input size. */
     private class Buffers(size: Int) {
@@ -81,7 +130,7 @@ class ObjectFinder(context: Context) {
         bitmap: Bitmap, minScore: Float, nmsIou: Float, maxCount: Int,
         minArea: Float = 0.002f, maxArea: Float = 0.4f, size: Int = PILE_SIZE,
     ): ProposalSet {
-        val s = session ?: return ProposalSet(emptyList(), FloatArray(0), 1f, 0f, 0f, size)
+        val s = sessionFor(size) ?: return ProposalSet(emptyList(), FloatArray(0), 1f, 0f, 0f, size)
         val scale = size.toFloat() / max(bitmap.width, bitmap.height)
         val dx = (size - bitmap.width * scale) / 2
         val dy = (size - bitmap.height * scale) / 2
@@ -183,7 +232,8 @@ class ObjectFinder(context: Context) {
     }
 
     fun close() {
-        session?.close()
+        chosen.values.forEach { (s, _) -> if (s !== cpuSession) s.close() }
+        cpuSession?.close()
     }
 
     companion object {
@@ -195,7 +245,18 @@ class ObjectFinder(context: Context) {
         /** Same neutral grey the embedder pads with. */
         private const val GREY = 0xFF7C7468.toInt()
 
-        private fun sessionOptions() = OrtSession.SessionOptions().apply {
+        private fun nnapiOptions(size: Int) = OrtSession.SessionOptions().apply {
+            setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+            setSymbolicDimensionValue("batch", 1)
+            setSymbolicDimensionValue("height", size.toLong())
+            setSymbolicDimensionValue("width", size.toLong())
+            // FP16 on the accelerator; anything it cannot run goes to ONNX Runtime's CPU kernels
+            // rather than NNAPI's slow reference CPU implementation.
+            addNnapi(java.util.EnumSet.of(NNAPIFlags.USE_FP16, NNAPIFlags.CPU_DISABLED))
+            setIntraOpNumThreads(4)
+        }
+
+        private fun cpuOptions() = OrtSession.SessionOptions().apply {
             setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
             // XNNPACK runs the convolutions much faster on ARM; fall back to the default CPU kernels if absent.
             val xnnpack = runCatching { addXnnpack(mapOf("intra_op_num_threads" to "4")) }.isSuccess
