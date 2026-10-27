@@ -84,9 +84,12 @@ def export_yoloe(weights, out, classes=None):
 if __name__ == "__main__":
     which = sys.argv[1]
     if which == "embedders":
-        export_embedder("facebook/dinov2-base", "dinov2_base")
-        export_embedder("facebook/dinov2-with-registers-small", "dinov2reg_small")
-        export_embedder("facebook/dinov2-with-registers-base", "dinov2reg_base")
+        for name, out in [("facebook/dinov2-base", "dinov2_base"), ("facebook/dinov2-large", "dinov2_large"),
+                          ("facebook/dinov2-with-registers-small", "dinov2reg_small")]:
+            try:
+                export_embedder(name, out)
+            except Exception as e:  # one failing candidate should not block the others
+                print("FAILED", name, type(e).__name__, str(e)[:500])
     else:
         export_yoloe("yoloe-11s-seg-pf.pt", "yoloe11s_pf")
         export_yoloe("yoloe-11m-seg-pf.pt", "yoloe11m_pf")
