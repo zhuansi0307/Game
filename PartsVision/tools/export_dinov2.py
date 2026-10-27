@@ -7,6 +7,8 @@ lookup needs; ImageNet classifiers such as MobileNet mostly encode category and 
 Graph:  input  "image"     float32 [1, 3, 224, 224], RGB in 0..1 (ImageNet normalization is in-graph)
         output "embedding" float32 [1, 768] = concat(L2(CLS token), L2(mean of patch tokens)) / sqrt(2)
                            so the result is itself unit length and cosine == dot product.
+        output "patches"   float32 [1, 256, 384] the 16x16 patch tokens (layer-normed), used to
+                           compare parts region by region when two library parts look alike.
 """
 import argparse
 
@@ -26,7 +28,7 @@ class Embedder(torch.nn.Module):
         tokens = self.model(pixel_values=x).last_hidden_state  # [1, 1 + patches, 384], layer-normed
         cls = torch.nn.functional.normalize(tokens[:, 0], dim=-1)
         patches = torch.nn.functional.normalize(tokens[:, 1:].mean(dim=1), dim=-1)
-        return torch.cat([cls, patches], dim=-1) / (2 ** 0.5)
+        return torch.cat([cls, patches], dim=-1) / (2 ** 0.5), tokens[:, 1:]
 
 
 def main():
@@ -41,7 +43,7 @@ def main():
     with torch.no_grad():
         torch.onnx.export(
             wrapper, dummy, args.fp32,
-            input_names=["image"], output_names=["embedding"],
+            input_names=["image"], output_names=["embedding", "patches"],
             opset_version=17, do_constant_folding=True, dynamo=False,
         )
 
@@ -54,7 +56,7 @@ def main():
     import numpy as np
     import onnxruntime as ort
     with torch.no_grad():
-        ref = wrapper(dummy).numpy()
+        ref = wrapper(dummy)[0].numpy()
     for path in (args.fp32, args.int8):
         out = ort.InferenceSession(path).run(None, {"image": dummy.numpy()})[0]
         cos = float((out * ref).sum() / (np.linalg.norm(out) * np.linalg.norm(ref)))

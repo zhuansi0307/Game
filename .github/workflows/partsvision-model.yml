@@ -28,11 +28,11 @@ jobs:
         working-directory: PartsVision/tools
         run: |
           python -m venv /tmp/ort-app && /tmp/ort-app/bin/pip install -q onnxruntime==1.20.1 numpy
-          /tmp/ort-app/bin/python -c "import onnxruntime as o; o.InferenceSession('dinov2_small_int8.onnx'); print('loads in', o.__version__)"
+          /tmp/ort-app/bin/python -c "import onnxruntime as o; s = o.InferenceSession('dinov2_small_int8.onnx'); print('loads in', o.__version__, [(x.name, x.shape) for x in s.get_outputs()])"
       - name: Publish
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: model-dinov2s-v2
+          tag_name: model-dinov2s-v3
           name: PartsVision embedding model (DINOv2-small)
           prerelease: true
           body: On-device image embedding model used by the PartsVision app build.
