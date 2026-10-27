@@ -5,11 +5,24 @@ import android.graphics.Rect
 import com.partsvision.app.data.Part
 
 /** One part found in a pile. */
-class PileDetection(val box: Rect, val part: Part, val score: Float, val confident: Boolean) {
-    val confidence: Float get() = Calibration.confidence(score)
+class PileDetection(
+    val box: Rect, val part: Part, val score: Float, val confident: Boolean,
+    /** The cloud model's own confidence (0–100) when it made the call. */
+    val aiConfidence: Int? = null,
+) {
+    val confidence: Float get() = aiConfidence?.let { it / 100f } ?: Calibration.confidence(score)
 }
 
-class PileResult(val frame: Bitmap, val detections: List<PileDetection>, val proposalCount: Int, val millis: Long) {
+class PileResult(
+    val frame: Bitmap,
+    val detections: List<PileDetection>,
+    val proposalCount: Int,
+    val millis: Long,
+    /** Parts found but not in the library, with what they look like (cloud identification only). */
+    val unknown: List<Pair<Rect, String>> = emptyList(),
+    val summary: String? = null,
+    val byAi: Boolean = false,
+) {
     /** Part number → how many were found, most frequent first. */
     val counts: List<Pair<Part, Int>> get() =
         detections.groupBy { it.part.id }.map { (_, d) -> d.first().part to d.size }.sortedByDescending { it.second }

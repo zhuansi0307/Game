@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.partsvision.app.ai.ClaudeService
 import com.partsvision.app.ai.ReferencePart
+import com.partsvision.app.ai.SceneIdentifier
 import com.partsvision.app.data.Part
 import com.partsvision.app.data.PartRepository
 import com.partsvision.app.data.SettingsStore
@@ -51,7 +52,14 @@ data class LiveAiState(
     val error: String? = null,
 )
 
-data class PileState(val running: Boolean = false, val progress: Float = 0f, val result: PileResult? = null, val error: String? = null) {
+data class PileState(
+    val running: Boolean = false,
+    val progress: Float = 0f,
+    val result: PileResult? = null,
+    val error: String? = null,
+    /** Identified by the cloud model rather than on the phone. */
+    val ai: Boolean = false,
+) {
     val active: Boolean get() = running || result != null || error != null
 }
 
@@ -69,6 +77,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val embedder by lazy { ImageEmbedderHelper(app) }
     private val finder by lazy { ObjectFinder(app) }
     private val pileScanner by lazy { PileScanner(embedder, finder) }
+    private val sceneIdentifier by lazy { SceneIdentifier(embedder, finder) }
 
     val parts: StateFlow<List<Part>> = repo.parts
 
@@ -170,6 +179,25 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 })
             } catch (e: Exception) {
                 PileState(error = e.message ?: "整堆识别失败")
+            }
+        }
+    }
+
+    /** Cloud identification of everything in [frame]: most accurate, a few seconds, needs the API key. */
+    fun aiScan(frame: Bitmap) {
+        if (!settings.hasApiKey) {
+            _pile.value = PileState(error = "AI 精准识别需要先在“设置”中填写 API Key", ai = true)
+            return
+        }
+        pileJob?.cancel()
+        _pile.value = PileState(running = true, ai = true)
+        pileJob = viewModelScope.launch {
+            _pile.value = try {
+                PileState(ai = true, result = withContext(Dispatchers.IO) {
+                    sceneIdentifier.identify(frame, parts.value, ClaudeService(settings.apiKey, settings.model))
+                })
+            } catch (e: Exception) {
+                PileState(ai = true, error = e.message ?: "AI 识别失败")
             }
         }
     }

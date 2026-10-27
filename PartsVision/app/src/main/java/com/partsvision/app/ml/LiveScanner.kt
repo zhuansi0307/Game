@@ -137,6 +137,15 @@ class LiveScanner(
                     isFallback = set == null,
                 ).also { lastResults[key] = it }
             }
+            // FastSAM also outlines pieces of a part (cap, nut, thread). Drop a box that mostly lies
+            // inside a bigger box recognized as a part at least as well — that is the whole part.
+            val whole = seen.filter { o ->
+                seen.none { big ->
+                    big !== o && big.plausible && big.box.width() * big.box.height() > o.box.width() * o.box.height() &&
+                        ObjectFinder.overlapMin(big.box, o.box) > 0.6f &&
+                        (!o.plausible || big.top!!.smoothedScore >= o.top!!.smoothedScore - 0.02f)
+                }
+            }
             // Objects the detector missed this frame but saw moments ago keep their box and label,
             // so labels do not blink when the hand moves.
             val seenKeys = keys.toSet()
@@ -149,7 +158,7 @@ class LiveScanner(
             onResult(
                 LiveFrame(
                     frame = frame,
-                    objects = seen + coasting,
+                    objects = whole + coasting,
                     frameMs = SystemClock.elapsedRealtime() - start,
                     frameNo = frameNo,
                     problem = when {

@@ -62,6 +62,48 @@ class ClaudeService(apiKey: String, private val model: String) {
     }
 
     /**
+     * Identifies every part in a scene against the library ("set-of-marks" prompting): the phone
+     * outlines candidate regions and numbers them in [markedJpegBase64]; the model decides which
+     * numbered regions form one physical part (a part is often split into cap / body / nut
+     * regions) and which reference it is. [cleanJpegBase64] is the same frame without marks, so
+     * small details are not hidden under the labels.
+     *
+     * Returns raw JSON text:
+     * {"items":[{"marks":[3,7],"part_number":"…","confidence":0-100,"reason":"…"}],"summary":"…"}
+     */
+    fun identifyScene(
+        cleanJpegBase64: String,
+        markedJpegBase64: String,
+        markCount: Int,
+        references: List<ReferencePart>,
+    ): String {
+        val blocks = mutableListOf<ContentBlockParam>()
+        blocks += text("零件库参考照片（每种零件一张，零件号写在照片前）：")
+        references.forEach { r ->
+            blocks += text("零件号 ${r.partNumber}${if (r.name.isNotBlank()) "（${r.name}）" else ""}")
+            r.photoJpegBase64?.let { blocks += jpeg(it) }
+        }
+        blocks += text("待识别的现场画面（原图）：")
+        blocks += jpeg(cleanJpegBase64)
+        blocks += text("同一画面，候选区域已用编号框标出（编号 1–$markCount）：")
+        blocks += jpeg(markedJpegBase64)
+        blocks += text(buildString {
+            appendLine("请找出画面中每一个实际的零件，并判断它是零件库里的哪个零件号。")
+            appendLine("1. 一个零件可能被拆成几个编号框（例如帽、本体、螺母、螺纹分别一个框），请把属于同一个零件的编号合并成一项；一个编号框也可能同时框住了几个零件，这时用最能代表该零件的编号。")
+            appendLine("2. 对照参考照片的细节区分外形相近的零件：每个端口是快插口还是螺纹、帽的颜色、螺纹粗细长短、接头形状（直通/弯头/三通/Y 型）。不要只凭整体相似就判断。")
+            appendLine("3. 零件库里没有的零件 part_number 填空字符串，并在 reason 里写出它像什么；托盘、地面、包装等不是零件的区域不要输出。")
+            appendLine("4. confidence 是你对零件号判断的把握（0–100）。")
+            appendLine("只输出一个 JSON 对象，不要输出其它内容：")
+            append("{\"items\": [{\"marks\": [编号, …], \"part_number\": \"…\", \"confidence\": 整数, \"reason\": \"简短中文理由\"}], \"summary\": \"一句话总结各零件号的数量\"}")
+        })
+        val params = baseParams(maxTokens = 16000L, effort = OutputConfig.Effort.HIGH)
+            .system("你是一名经验丰富的气动/液压接头和机械零件识别专家，擅长对照参考照片分辨外形相近的零件型号。")
+            .addUserMessageOfBlockParams(blocks)
+            .build()
+        return collect(params, onProgress = null)
+    }
+
+    /**
      * Converts a hand-drawn sketch into an SVG engineering drawing.
      * [onProgress] receives the number of characters generated so far.
      */

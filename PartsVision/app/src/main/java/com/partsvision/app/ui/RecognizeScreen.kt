@@ -160,17 +160,18 @@ private fun LiveScanView(
             )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
-                    onClick = { scanner.lastFrame?.let(vm::scanPile) },
+                    onClick = { scanner.lastFrame?.let(vm::aiScan) },
                     modifier = Modifier.weight(1f),
                 ) {
-                    Icon(Icons.Default.CameraAlt, null, Modifier.size(18.dp))
+                    Icon(Icons.Default.AutoAwesome, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("识别整堆")
+                    Text("AI 精准识别")
                 }
-                FilledTonalButton(onClick = picker.pickFromGallery) {
-                    Icon(Icons.Default.PhotoLibrary, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("相册")
+                FilledTonalButton(onClick = { scanner.lastFrame?.let(vm::scanPile) }) {
+                    Text("本机识别")
+                }
+                FilledTonalIconButton(onClick = picker.pickFromGallery, modifier = Modifier.size(48.dp)) {
+                    Icon(Icons.Default.PhotoLibrary, "相册")
                 }
             }
         }
@@ -343,8 +344,13 @@ private fun PileView(state: PileState, onOpenPart: (String) -> Unit, onBack: () 
             Text("返回相机")
         }
         if (state.running) {
-            Text("正在逐个识别零件堆里的每个零件…", style = MaterialTheme.typography.titleSmall)
-            LinearProgressIndicator(progress = { state.progress }, modifier = Modifier.fillMaxWidth())
+            if (state.ai) {
+                Text("AI 正在对照零件库逐个识别（通常 5–20 秒）…", style = MaterialTheme.typography.titleSmall)
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+            } else {
+                Text("正在逐个识别零件堆里的每个零件…", style = MaterialTheme.typography.titleSmall)
+                LinearProgressIndicator(progress = { state.progress }, modifier = Modifier.fillMaxWidth())
+            }
         }
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         val result = state.result ?: return@Column
@@ -358,6 +364,12 @@ private fun PileView(state: PileState, onOpenPart: (String) -> Unit, onBack: () 
                 val dx = (size.width - fw * scale) / 2
                 val dy = (size.height - fh * scale) / 2
                 val pad = 2.dp.toPx()
+                result.unknown.forEach { (b, _) ->
+                    drawRect(
+                        UnknownColor, Offset(b.left * scale + dx, b.top * scale + dy),
+                        Size(b.width() * scale, b.height() * scale), style = Stroke(2.dp.toPx()),
+                    )
+                }
                 result.detections.forEach { d ->
                     val color = if (d.confident) ConfidentColor else MaybeColor
                     val left = d.box.left * scale + dx
@@ -373,9 +385,13 @@ private fun PileView(state: PileState, onOpenPart: (String) -> Unit, onBack: () 
         }
 
         Text(
-            "共找到 ${result.detections.size} 个零件（候选 ${result.proposalCount} 个 · 用时 ${"%.1f".format(result.millis / 1000f)} 秒）",
+            "${if (result.byAi) "AI " else ""}共找到 ${result.detections.size} 个零件库中的零件（用时 ${"%.1f".format(result.millis / 1000f)} 秒）",
             style = MaterialTheme.typography.titleSmall,
         )
+        result.summary?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+        result.unknown.take(3).forEach { (_, why) ->
+            Text("灰框（不在零件库）：$why", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         LazyColumn(Modifier.heightIn(max = 220.dp)) {
             items(result.counts, key = { it.first.id }) { (part, count) ->
                 val ds = result.detections.filter { it.part.id == part.id }
@@ -390,8 +406,8 @@ private fun PileView(state: PileState, onOpenPart: (String) -> Unit, onBack: () 
                 }
             }
         }
-        Text(
-            "提示：零件摊开、少叠压时最准；透明盒子里、紧挨着堆满时容易漏认或认错，可以对着单个零件实时识别。",
+        if (!result.byAi) Text(
+            "提示：本机识别在零件摊开、少叠压时最准；分不清或一个零件被拆成几个框时，用“AI 精准识别”。",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
