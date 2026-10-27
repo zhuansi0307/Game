@@ -30,7 +30,7 @@ class PileResult(
 
 /**
  * Thorough one-shot detection for a still frame of many touching parts (the CNOS recipe):
- *  1. FastSAM proposes many overlapping candidates at every granularity (whole part, cap, nut…);
+ *  1. YOLOE + FastSAM propose many overlapping candidates at every granularity (whole part, cap, nut…);
  *  2. each is cut out with its mask and embedded with DINOv2, then scored against every
  *     library part;
  *  3. neighbouring candidates that each only partly match are also tried merged, because in a

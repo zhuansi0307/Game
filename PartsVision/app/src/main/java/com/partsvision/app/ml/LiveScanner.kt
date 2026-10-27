@@ -68,7 +68,7 @@ class LiveFrame(
 
 /**
  * CameraX analyzer that works like a YOLO-style detector over the user's own parts library:
- * FastSAM proposes every individual object (so a pile is split into its parts), each object is
+ * YOLOE proposes every individual whole object (so a pile is split into its parts), each object is
  * cut out with its mask and embedded with DINOv2, and the embedding is matched against the
  * library; OCR text inside a box counts towards that box. Objects are tracked across frames
  * and identified once, then only re-checked occasionally — at most [MAX_EMBEDS_PER_FRAME]
@@ -110,7 +110,7 @@ class LiveScanner(
 
             t = SystemClock.elapsedRealtime()
             val set = if (finder.isAvailable) {
-                finder.propose(frame, minScore = LIVE_MIN_SCORE, nmsIou = 0.5f, maxCount = MAX_OBJECTS, size = LIVE_SIZE)
+                finder.propose(frame, minScore = LIVE_MIN_SCORE, nmsIou = 0.5f, maxCount = MAX_OBJECTS, size = LIVE_SIZE, live = true)
             } else null
             val detectMs = SystemClock.elapsedRealtime() - t
             val proposals = set?.proposals ?: listOf(Proposal(centerBox(frame), 1f, emptyList()))
@@ -284,7 +284,8 @@ class LiveScanner(
     companion object {
         private const val TAG = "LiveScanner"
         private const val SMOOTHING = 0.5f
-        private const val LIVE_MIN_SCORE = 0.35f
+        /** YOLOE prompt-free scores are class probabilities, lower than FastSAM objectness. */
+        private const val LIVE_MIN_SCORE = 0.2f
         private const val MAX_OBJECTS = 15
         private const val MAX_CANDIDATES = 4
         private const val MAX_EMBEDS_PER_FRAME = 2

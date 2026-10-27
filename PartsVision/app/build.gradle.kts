@@ -54,9 +54,11 @@ android {
 // On-device models, fetched once into assets from this repo's releases:
 //  - DINOv2-small int8 (~24 MB) image embedder, tools/export_dinov2.py
 //  - FastSAM-s (~47 MB, any input size) object proposer, tools/export_fastsam.py
+//  - YOLOE-11s prompt-free (~48 MB, any input size) whole-object proposer, tools/export_candidates.py
 val models = mapOf(
     "dinov2_small_int8.onnx" to "https://github.com/zhuansi0307/Game/releases/download/model-dinov2s-v3/dinov2_small_int8.onnx",
     "fastsam_s.onnx" to "https://github.com/zhuansi0307/Game/releases/download/model-fastsam-s-v2/fastsam_s.onnx",
+    "yoloe11s_pf.onnx" to "https://github.com/zhuansi0307/Game/releases/download/model-candidates-v1/yoloe11s_pf.onnx",
 )
 val downloadModels by tasks.registering {
     val targets = models.keys.map { file("src/main/assets/$it") }

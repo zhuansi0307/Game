@@ -188,7 +188,7 @@ class ImageEmbedderHelper(context: Context) {
         private const val PAD_COLOR = 0xFF7C7468.toInt() // ImageNet mean (124, 116, 104)
 
         /** Bump when the model or cropping changes so stored vectors get recomputed. */
-        const val VERSION = 7
+        const val VERSION = 8
         private const val PATCH = 14
         private const val MAX_REGIONS = 64
 
