@@ -24,19 +24,24 @@ data class MatchResult(
 }
 
 /**
- * Thresholds on DINOv2 cosine similarity and a mapping to an intuitive confidence.
+ * Thresholds on DINOv2 cosine similarity (cut-outs, grey direction removed) and a mapping to a
+ * displayed confidence.
  *
- * Measured on two real photos of fittings on a floor and in trays (cut-outs, grey direction
- * removed, one reference photo per part taken from the other photo): the same part scores
- * ~0.54–0.94, other fittings, tray compartments and cardboard mostly 0.30–0.48. Because similar parts sit close, a match
- * is only called confident when it also beats the next library part by [MARGIN].
+ * Measured across three real photos: a different fitting family (elbow vs tee) scores
+ * 0.62–0.68; the same model photographed elsewhere ~0.87; but two *different* tee models that
+ * differ only in one end score 0.90 — overall similarity cannot separate those. So:
+ *  - below [MAYBE] nothing is claimed (an elbow is not called a tee — it reached 0.72 against
+ *    a tee reference in a real scene);
+ *  - look-alike models are only told apart when both are in the library and one wins by
+ *    [MARGIN] (or by region comparison, see PartMatcher.regionScores);
+ *  - the displayed percentage reaches ~90% only around 0.80, not at 0.65 as before.
  */
 object Calibration {
-    const val MAYBE = 0.50f
-    const val CONFIDENT = 0.56f
-    const val MARGIN = 0.05f
-    private const val MIDPOINT = 0.50f
-    private const val SLOPE = 0.04f
+    const val MAYBE = 0.75f
+    const val CONFIDENT = 0.80f
+    const val MARGIN = 0.04f
+    private const val MIDPOINT = 0.76f
+    private const val SLOPE = 0.035f
 
     fun confidence(cosine: Float): Float = 1f / (1f + kotlin.math.exp(-(cosine - MIDPOINT) / SLOPE))
 
@@ -60,7 +65,7 @@ object PartMatcher {
         if (query == null || query.count == 0) return emptyMap()
         val best = ranked.maxOfOrNull { it.imageScore } ?: return emptyMap()
         val close = ranked
-            .filter { best - it.imageScore <= Calibration.RERANK_WINDOW && it.imageScore >= Calibration.MAYBE - 0.05f }
+            .filter { best - it.imageScore <= Calibration.RERANK_WINDOW && it.imageScore >= Calibration.MAYBE - 0.08f }
             .sortedByDescending { it.imageScore }
             .take(4)
         if (close.size < 2) return emptyMap()

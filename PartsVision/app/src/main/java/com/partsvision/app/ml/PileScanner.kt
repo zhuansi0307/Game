@@ -90,9 +90,19 @@ class PileScanner(private val embedder: ImageEmbedderHelper, private val finder:
         merges.sortedByDescending { it.second }.take(MAX_MERGES).forEach { (u, _) -> scored += score(u) }
         onProgress(1f)
 
+        // A box around several separate matching candidates is a group of parts, not one part.
+        val matching = scored.filter { it.part != null && it.best >= Calibration.MAYBE }
+        fun isGroup(c: Candidate): Boolean {
+            val inside = matching.filter { it !== c && ObjectFinder.overlapMin(c.proposal.box, it.proposal.box) > 0.8f &&
+                it.proposal.area < c.proposal.area * 0.8f }
+            for (i in inside.indices) for (j in i + 1 until inside.size) {
+                if (ObjectFinder.overlapMin(inside[i].proposal.box, inside[j].proposal.box) < 0.3f) return true
+            }
+            return false
+        }
         val kept = ArrayList<Candidate>()
-        for (c in scored.sortedByDescending { it.best }) {
-            if (c.part == null || c.best < Calibration.MAYBE) break
+        for (c in matching.sortedByDescending { it.best }) {
+            if (isGroup(c)) continue
             if (kept.none { ObjectFinder.overlapMin(it.proposal.box, c.proposal.box) > 0.5f }) kept += c
         }
         return PileResult(

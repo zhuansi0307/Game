@@ -139,9 +139,13 @@ class LiveScanner(
             }
             // FastSAM also outlines pieces of a part (cap, nut, thread). Drop a box that mostly lies
             // inside a bigger box recognized as a part at least as well — that is the whole part.
+            // But a box around *several* parts (two or more separate recognized boxes inside it) is
+            // a group, not a part: drop the group box instead.
+            val groups = seen.filter { big -> containsSeveral(big, seen) }.toSet()
             val whole = seen.filter { o ->
-                seen.none { big ->
-                    big !== o && big.plausible && big.box.width() * big.box.height() > o.box.width() * o.box.height() &&
+                o !in groups && seen.none { big ->
+                    big !== o && big !in groups && big.plausible &&
+                        big.box.width() * big.box.height() > o.box.width() * o.box.height() &&
                         ObjectFinder.overlapMin(big.box, o.box) > 0.6f &&
                         (!o.plausible || big.top!!.smoothedScore >= o.top!!.smoothedScore - 0.02f)
                 }
@@ -176,6 +180,16 @@ class LiveScanner(
         } finally {
             image.close()
         }
+    }
+
+    /** True when [big] contains two or more recognized objects that do not overlap each other. */
+    private fun containsSeveral(big: DetectedPart, all: List<DetectedPart>): Boolean {
+        val inside = all.filter { it !== big && it.plausible && ObjectFinder.overlapMin(big.box, it.box) > 0.8f &&
+            it.box.width() * it.box.height() < big.box.width() * big.box.height() * 0.8f }
+        for (i in inside.indices) for (j in i + 1 until inside.size) {
+            if (ObjectFinder.overlapMin(inside[i].box, inside[j].box) < 0.3f) return true
+        }
+        return false
     }
 
     /**

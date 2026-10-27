@@ -133,6 +133,7 @@ private fun LiveScanView(
         Text(
             when {
                 parts.isEmpty() -> "零件库为空：请先到“零件库”录入零件号和实拍图"
+                parts.size == 1 -> "零件库只有 1 种零件：外形相近的其他零件可能被认成它，请把容易混淆的型号都录入"
                 reindexing -> "正在用新模型重建零件库索引…"
                 else -> "实时识别画面中的零件 · 零件堆在一起时点“识别整堆”"
             },
