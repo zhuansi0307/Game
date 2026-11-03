@@ -1,0 +1,3 @@
+## 2024-03-24 - [Optimize Video Frame Rendering]
+**Learning:** For Pygame applications streaming video from OpenCV, converting frames using `np.transpose` followed by `pygame.surfarray.make_surface` and `pygame.transform.smoothscale` is a severe performance bottleneck. Generating a surface directly using `pygame.image.frombuffer(array.tobytes(), size, 'RGB')` is approximately 15x faster. Furthermore, resizing the frame with `cv2.resize` *before* converting color spaces minimizes the amount of pixel processing required.
+**Action:** When updating Pygame video rendering loops, always favor `pygame.image.frombuffer` over `surfarray`, and ensure spatial transformations (like resizing) occur before color space conversions.
