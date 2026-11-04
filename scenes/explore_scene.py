@@ -68,7 +68,7 @@ class ExploreScene(BaseScene):
         """加载场景配置"""
         scenes_data = self.asset_manager.load_scenes()
         scenes = scenes_data.get("scenes", [])
-        
+
         scene_list = [s for s in scenes if s.get("id") == self.scene_id]
 
         for scene in scene_list:
@@ -96,7 +96,7 @@ class ExploreScene(BaseScene):
         if self.time_variants:
             gs = get_game_state()
             current_period = gs.game_time.get_period_name()
-            
+
             bg_path = self.time_variants.get(current_period)
             if bg_path:
                 self.background = self.asset_manager.load_image(
@@ -121,7 +121,7 @@ class ExploreScene(BaseScene):
         """切换时间段（循环）"""
         if not self.time_variants:
             return
-        
+
         gs = get_game_state()
         gs.next_time_period()
         self._load_background_for_time()
@@ -310,7 +310,7 @@ class ExploreScene(BaseScene):
             hotspot_id=hotspot.id,
             event_type="hotspot_click"
         )
-        
+
         if triggered_task:
             current_step = triggered_task.get_current_step()
             if current_step:

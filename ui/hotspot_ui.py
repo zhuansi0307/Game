@@ -47,10 +47,10 @@ class HotspotUI:
         progress = self._ease_out(hotspot.hover_progress)
 
         self._draw_dot(screen, hotspot, time, progress)
-        
+
         if hotspot.hover_progress > 0.1:
             self._draw_label(screen, hotspot, fonts.get('small'), progress)
-        
+
         if hotspot.hover_progress > 0.3:
             self._draw_card(screen, hotspot, fonts, progress)
 
@@ -83,7 +83,7 @@ class HotspotUI:
 
         if hotspot.hover_progress > 0.1:
             self._draw_label(screen, hotspot, fonts.get('small'), progress)
-        
+
         if hotspot.hover_progress > 0.3:
             self._draw_card(screen, hotspot, fonts, progress)
 
@@ -125,17 +125,17 @@ class HotspotUI:
         cx, cy = center
         radius = int(radius)
         glow_radius = int(glow_radius)
-        
+
         glow_surface = pygame.Surface((glow_radius * 2, glow_radius * 2), pygame.SRCALPHA)
         glow_center = (glow_radius, glow_radius)
-        
+
         glow_alpha = int(alpha * (0.22 + 0.18 * progress))
         span = max(1, glow_radius - radius)
         for r in range(glow_radius, radius, -3):
             falloff = 1 - (r - radius) / span
             a = int(glow_alpha * falloff * falloff)
             pygame.draw.circle(glow_surface, (*color, max(0, a)), glow_center, r)
-        
+
         screen.blit(glow_surface, (cx - glow_radius, cy - glow_radius))
 
         ring_radius = radius + int(4 * progress)
@@ -151,27 +151,27 @@ class HotspotUI:
         """绘制胶囊标签"""
         if not font or progress < 0.1:
             return
-            
+
         text = hotspot.title
         text_surface = font.render(text, True, COLOR_CHAMPAGNE_LIGHT)
         text_rect = text_surface.get_rect()
-        
+
         padding_h = 12
         padding_v = 4
-        
+
         label_width = text_rect.width + padding_h * 2
         label_height = text_rect.height + padding_v * 2
-        
+
         dot_x, dot_y = hotspot.dot_pos
         radius = self.base_radius
         label_x = dot_x - label_width // 2
         label_y = dot_y - radius - label_height - 10 - int(6 * progress)
-        
+
         surface = pygame.Surface((label_width, label_height), pygame.SRCALPHA)
         surface.fill((*COLOR_PANEL, int(190 * progress)))
-        pygame.draw.rect(surface, (*COLOR_CHAMPAGNE, int(210 * progress)), 
+        pygame.draw.rect(surface, (*COLOR_CHAMPAGNE, int(210 * progress)),
                          (0, 0, label_width, label_height), 1, border_radius=10)
-        
+
         screen.blit(surface, (label_x, label_y))
         text_surface.set_alpha(int(255 * progress))
         screen.blit(text_surface, (label_x + padding_h, label_y + padding_v))
@@ -180,45 +180,45 @@ class HotspotUI:
         """绘制详情卡片"""
         if progress < 0.3:
             return
-            
+
         title = hotspot.title
         desc = hotspot.desc
-        
+
         font_title = fonts.get('title', fonts.get('small'))
         font_desc = fonts.get('desc', fonts.get('small'))
-        
+
         title_surface = font_title.render(title, True, COLOR_CHAMPAGNE)
         max_text_width = 360
         desc_lines = self._wrap_text(desc, font_desc, max_text_width) if desc else []
-        
+
         padding = 16
         desc_width = max([font_desc.size(line)[0] for line in desc_lines], default=0)
         card_width = min(420, max(220, max(title_surface.get_width(), desc_width) + padding * 2))
         title_height = title_surface.get_height()
         desc_height = len(desc_lines) * (font_desc.get_height() + 5)
         card_height = title_height + desc_height + padding * (3 if desc_lines else 2)
-        
+
         dot_x, dot_y = hotspot.dot_pos
         card_x = dot_x - card_width // 2
         radius = self.base_radius
         card_y = dot_y - radius - card_height - 58 - int(10 * progress)
-        
+
         card_x = max(12, min(card_x, SCREEN_WIDTH - card_width - 12))
         card_y = max(10, card_y)
 
         self._draw_connector(screen, (dot_x, dot_y - radius - 4), (card_x + card_width // 2, card_y + card_height), progress)
-        
+
         surface = pygame.Surface((card_width, card_height), pygame.SRCALPHA)
         surface.fill((*COLOR_PANEL, int(218 * progress)))
-        pygame.draw.rect(surface, (*COLOR_CHAMPAGNE, int(230 * progress)), 
+        pygame.draw.rect(surface, (*COLOR_CHAMPAGNE, int(230 * progress)),
                          (0, 0, card_width, card_height), 1, border_radius=8)
         pygame.draw.rect(surface, (*COLOR_PANEL_BORDER, int(90 * progress)),
                          (5, 5, card_width - 10, card_height - 10), 1, border_radius=6)
-        
+
         screen.blit(surface, (card_x, card_y))
         title_surface.set_alpha(int(255 * progress))
         screen.blit(title_surface, (card_x + padding, card_y + padding))
-        
+
         for i, line in enumerate(desc_lines):
             desc_surface = font_desc.render(line, True, COLOR_TEXT)
             desc_surface.set_alpha(int(235 * progress))
