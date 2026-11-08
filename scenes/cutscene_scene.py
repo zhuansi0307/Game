@@ -112,7 +112,7 @@ class CutsceneScene(BaseScene):
                 controls_were_visible = self.show_controls
                 self.show_controls = True
                 self.controls_hide_timer = 0.0
-                
+
                 if controls_were_visible and self.player.handle_event(event, self.mouse_pos):
                     return True
                 return True
@@ -125,7 +125,7 @@ class CutsceneScene(BaseScene):
         elif event.type == pygame.KEYDOWN:
             self.show_controls = True
             self.controls_hide_timer = 0.0
-            
+
             if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
                 if self.player.last_error:
                     self._skip_to_end()

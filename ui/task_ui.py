@@ -14,10 +14,10 @@ class TaskUI:
     def __init__(self):
         self.visible = False
         self.current_task = None
-        
+
         self.notifications = []
         self.notification_duration = 3.0
-        
+
         self.task_panel_visible = False
         self.task_list = []
         self.guidance = None
@@ -64,7 +64,7 @@ class TaskUI:
         for notification in self.notifications[:]:
             notification["elapsed"] += dt
             notification["progress"] = min(1.0, notification["elapsed"] / notification["duration"])
-            
+
             if notification["elapsed"] >= notification["duration"]:
                 self.notifications.remove(notification)
 
@@ -79,7 +79,7 @@ class TaskUI:
 
         self._draw_notifications(screen)
         self._draw_guidance(screen)
-        
+
         if self.task_panel_visible:
             self._draw_task_panel(screen)
 
@@ -87,14 +87,14 @@ class TaskUI:
         """绘制通知列表"""
         if not self.notifications:
             return
-            
+
         start_y = 80
         current_y = start_y
-        
+
         for notification in self.notifications:
             height = self._draw_single_notification(
-                screen, 
-                notification, 
+                screen,
+                notification,
                 current_y
             )
             current_y += height + 10
@@ -102,7 +102,7 @@ class TaskUI:
     def _draw_single_notification(self, screen, notification, y):
         """绘制单个通知"""
         progress = notification["progress"]
-        
+
         if progress < 0.2:
             entry_progress = progress / 0.2
             alpha = entry_progress
@@ -114,13 +114,13 @@ class TaskUI:
         else:
             alpha = 1.0
             offset_x = 0
-        
+
         if alpha <= 0.01:
             return 0
-        
+
         message = notification["message"]
         font = self.fonts["notification"]
-        
+
         padding_h = 20
         padding_v = 12
         max_width = 430
@@ -129,13 +129,13 @@ class TaskUI:
         text_width = max((font.size(line)[0] for line in lines), default=0)
         width = min(max_width + padding_h * 2, max(180, text_width + padding_h * 2))
         height = len(lines) * line_height + padding_v * 2
-        
+
         x = SCREEN_WIDTH - width - 20 + offset_x
         panel_surface = pygame.Surface((width, height), pygame.SRCALPHA)
         panel_surface.fill((*COLOR_PANEL, int(200 * alpha)))
-        pygame.draw.rect(panel_surface, (*COLOR_CHAMPAGNE, int(180 * alpha)), 
+        pygame.draw.rect(panel_surface, (*COLOR_CHAMPAGNE, int(180 * alpha)),
                          (0, 0, width, height), 1, border_radius=8)
-        
+
         screen.blit(panel_surface, (x, y))
         for index, line in enumerate(lines):
             text_surface = font.render(line, True, COLOR_TEXT)
@@ -149,18 +149,18 @@ class TaskUI:
         panel_height = 500
         panel_x = SCREEN_WIDTH - panel_width - 20
         panel_y = 80
-        
+
         panel_surface = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
         panel_surface.fill((*COLOR_PANEL, 220))
-        pygame.draw.rect(panel_surface, (*COLOR_PANEL_BORDER, 255), 
+        pygame.draw.rect(panel_surface, (*COLOR_PANEL_BORDER, 255),
                          (0, 0, panel_width, panel_height), 1, border_radius=12)
-        
+
         screen.blit(panel_surface, (panel_x, panel_y))
-        
+
         title_font = self.fonts["panel_title"]
         title_surface = title_font.render("任务", True, COLOR_CHAMPAGNE)
         screen.blit(title_surface, (panel_x + 20, panel_y + 20))
-        
+
         if self.current_task:
             task_font = self.fonts["task_title"]
             task_title = self.current_task.title
@@ -169,7 +169,7 @@ class TaskUI:
                 task_surface = task_font.render(line, True, COLOR_TEXT)
                 screen.blit(task_surface, (panel_x + 20, y_offset))
                 y_offset += task_font.get_height() + 4
-            
+
             if self.current_task.description:
                 desc_font = self.fonts["task_desc"]
                 y_offset += 10

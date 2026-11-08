@@ -30,7 +30,7 @@ def draw_text(screen, text, font, color, pos, max_width=None):
         x, y = pos
         line_height = font.get_height()
         total_height = 0
-        
+
         for line in lines:
             if line.strip() == '':
                 y += line_height
@@ -52,7 +52,7 @@ def draw_text(screen, text, font, color, pos, max_width=None):
                 text_surface = font.render(current_line.strip(), True, color)
                 screen.blit(text_surface, (x, y + total_height))
             total_height += line_height
-        
+
         return pygame.Rect(pos[0], pos[1], max_width, total_height)
     else:
         text_surface = font.render(text, True, color)
@@ -67,32 +67,32 @@ def draw_button(screen, rect, text, font, hovered=False):
     bg_color = COLOR_PANEL
     border_color = COLOR_CHAMPAGNE_BRIGHT if hovered else COLOR_CHAMPAGNE
     border_width = 2 if hovered else 1
-    
+
     button_surface = pygame.Surface((width, height), pygame.SRCALPHA)
     button_surface.fill((*bg_color, 200))
-    pygame.draw.rect(button_surface, (*border_color, 255), 
+    pygame.draw.rect(button_surface, (*border_color, 255),
                      (0, 0, width, height), border_width)
     screen.blit(button_surface, (x, y))
-    
+
     text_color = COLOR_CHAMPAGNE_BRIGHT if hovered else COLOR_CHAMPAGNE
     text_surface = font.render(text, True, text_color)
     text_rect = text_surface.get_rect(center=(x + width // 2, y + height // 2))
     screen.blit(text_surface, text_rect)
-    
+
     return pygame.Rect(x, y, width, height)
 
 
 def draw_panel(screen, rect, alpha=160, border=True):
     """绘制半透明面板"""
     x, y, width, height = rect
-    
+
     panel_surface = pygame.Surface((width, height), pygame.SRCALPHA)
     panel_surface.fill((*COLOR_PANEL, alpha))
-    
+
     if border:
         pygame.draw.rect(panel_surface, (*COLOR_PANEL_BORDER, 255),
                         (0, 0, width, height), 1)
-    
+
     screen.blit(panel_surface, (x, y))
     return pygame.Rect(x, y, width, height)
 
@@ -103,12 +103,12 @@ def draw_dialogue_box(screen, speaker, text, font_speaker=None, font_text=None, 
         font_speaker = asset_manager.load_font(28) if asset_manager else pygame.font.Font(None, 28)
     if font_text is None:
         font_text = asset_manager.load_font(32) if asset_manager else pygame.font.Font(None, 32)
-    
+
     box_width = SCREEN_WIDTH - 200
     box_height = 180
     box_x = 100
     box_y = SCREEN_HEIGHT - box_height - 60
-    
+
     box_surface = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
     box_surface.fill((*COLOR_DIALOGUE_BG, 230))
     pygame.draw.rect(box_surface, (*COLOR_DIALOGUE_BORDER, 255),
@@ -116,50 +116,50 @@ def draw_dialogue_box(screen, speaker, text, font_speaker=None, font_text=None, 
     pygame.draw.rect(box_surface, (*COLOR_PANEL_BORDER, 100),
                     (6, 6, box_width - 12, box_height - 12), 1)
     screen.blit(box_surface, (box_x, box_y))
-    
+
     speaker_color = COLOR_CHAMPAGNE
     speaker_surface = font_speaker.render(speaker, True, speaker_color)
     screen.blit(speaker_surface, (box_x + 30, box_y + 20))
-    
+
     line_y = box_y + 55
-    pygame.draw.line(screen, (*COLOR_CHAMPAGNE, 100), 
+    pygame.draw.line(screen, (*COLOR_CHAMPAGNE, 100),
                     (box_x + 30, line_y), (box_x + box_width - 30, line_y), 1)
-    
+
     draw_text(screen, text, font_text, COLOR_TEXT, (box_x + 30, box_y + 70), box_width - 60)
 
 
 def draw_menu_button(screen, rect, text, font, hovered=False, icon=None, hover_progress=None):
     """绘制菜单按钮"""
     x, y, width, height = rect
-    
+
     if hover_progress is None:
         hover_progress = 1.0 if hovered else 0.0
-        
+
     bg_alpha = int(180 + 40 * hover_progress)
-    
+
     c1 = COLOR_CHAMPAGNE
     c2 = COLOR_CHAMPAGNE_BRIGHT
     border_r = int(c1[0] + (c2[0] - c1[0]) * hover_progress)
     border_g = int(c1[1] + (c2[1] - c1[1]) * hover_progress)
     border_b = int(c1[2] + (c2[2] - c1[2]) * hover_progress)
     border_color = (border_r, border_g, border_b)
-    
+
     border_width = 1 if hover_progress < 0.5 else 2
-    
+
     expand = int(20 * hover_progress)
     draw_x = x - expand // 2
     draw_w = width + expand
-    
+
     button_surface = pygame.Surface((draw_w, height), pygame.SRCALPHA)
     button_surface.fill((*COLOR_PANEL, bg_alpha))
     pygame.draw.rect(button_surface, (*border_color, 255), (0, 0, draw_w, height), border_width)
-    
+
     if hover_progress > 0:
         inner_rect = (3, 3, draw_w - 6, height - 6)
         pygame.draw.rect(button_surface, (*border_color, int(30 * hover_progress)), inner_rect, 1)
-    
+
     screen.blit(button_surface, (draw_x, y))
-    
+
     text_color = border_color
     text_surface = font.render(text, True, text_color)
     text_x = draw_x + 30 + int(10 * hover_progress)
@@ -167,12 +167,12 @@ def draw_menu_button(screen, rect, text, font, hovered=False, icon=None, hover_p
         text_x += 40
     text_y = y + (height - text_surface.get_height()) // 2
     screen.blit(text_surface, (text_x, text_y))
-    
+
     if icon:
         icon_x = draw_x + 20 + int(10 * hover_progress)
         icon_y = y + (height - icon.get_height()) // 2
         screen.blit(icon, (icon_x, icon_y))
-    
+
     return pygame.Rect(x, y, width, height)
 
 
@@ -182,16 +182,16 @@ def draw_tooltip(screen, text, pos, font, bg_color=None, text_color=None):
         bg_color = (*COLOR_PANEL, 240)
     if text_color is None:
         text_color = COLOR_TEXT
-    
+
     text_surface = font.render(text, True, text_color)
     padding = 10
     width = text_surface.get_width() + padding * 2
     height = text_surface.get_height() + padding * 2
-    
+
     tooltip_surface = pygame.Surface((width, height), pygame.SRCALPHA)
     tooltip_surface.fill(bg_color)
     pygame.draw.rect(tooltip_surface, (*COLOR_CHAMPAGNE, 150), (0, 0, width, height), 1)
-    
+
     screen.blit(tooltip_surface, pos)
     screen.blit(text_surface, (pos[0] + padding, pos[1] + padding))
 
@@ -208,20 +208,20 @@ def draw_rounded_panel(screen, rect, bg_color, border_color=None, border_width=1
     :param border_alpha: 边框透明度
     """
     x, y, width, height = rect
-    
+
     panel_surface = pygame.Surface((width, height), pygame.SRCALPHA)
-    
+
     if len(bg_color) == 4:
         panel_surface.fill(bg_color)
     else:
         panel_surface.fill((*bg_color, 240))
-    
+
     if border_color:
         if len(border_color) == 4:
             pygame.draw.rect(panel_surface, border_color, (0, 0, width, height), border_width, border_radius=radius)
         else:
             pygame.draw.rect(panel_surface, (*border_color, border_alpha), (0, 0, width, height), border_width, border_radius=radius)
-    
+
     screen.blit(panel_surface, (x, y))
 
 
@@ -237,19 +237,19 @@ def draw_text_wrapped(screen, text, font, color, rect, line_spacing=6):
     """
     x, y, max_width, max_height = rect
     line_height = font.get_height() + line_spacing
-    
+
     words = text.split('\n')
     current_y = y
-    
+
     for line in words:
         if line.strip() == '':
             current_y += line_height
             continue
-            
+
         words_in_line = line.split()
         current_line = ''
         words_to_render = []
-        
+
         for w in words_in_line:
             test_line = current_line + w + ' '
             if font.size(test_line)[0] <= max_width:
@@ -258,10 +258,10 @@ def draw_text_wrapped(screen, text, font, color, rect, line_spacing=6):
                 if current_line:
                     words_to_render.append(current_line.strip())
                 current_line = w + ' '
-        
+
         if current_line:
             words_to_render.append(current_line.strip())
-        
+
         for wl in words_to_render:
             if current_y - y + line_height > max_height:
                 break
@@ -269,7 +269,7 @@ def draw_text_wrapped(screen, text, font, color, rect, line_spacing=6):
             if screen is not None:
                 screen.blit(text_surface, (x, current_y))
             current_y += line_height
-    
+
     return current_y - y
 
 
