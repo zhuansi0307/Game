@@ -205,7 +205,7 @@ class GameState:
             min_val = condition.get("min")
             max_val = condition.get("max")
             actual = self.get_player_stat(stat_name)
-            
+
             if expected is not None and actual != expected:
                 return False
             if min_val is not None and actual < min_val:
@@ -219,7 +219,7 @@ class GameState:
             min_val = condition.get("min")
             max_val = condition.get("max")
             actual = self.get_npc_affection(npc_id)
-            
+
             if expected is not None and actual != expected:
                 return False
             if min_val is not None and actual < min_val:

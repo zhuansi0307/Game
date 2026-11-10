@@ -1,0 +1,4 @@
+
+## 2024-05-19 - [Video Frame Pygame Surface Conversion Optimization]
+**Learning:** `np.transpose` + `pygame.surfarray.make_surface` + `pygame.transform.smoothscale` is notoriously slow for real-time video playback in Python. Replacing it with `cv2.resize` (which leverages OpenCV's optimized C++ backend) and `pygame.image.frombuffer` (a direct memory copy that bypasses array transposition) dramatically decreases CPU time per frame. Doing `cv2.resize` *before* `cv2.cvtColor` also reduces the number of pixels that need color conversion if we are downscaling (or doing it on the native size).
+**Action:** When working with Pygame + OpenCV integrations in this codebase, always resize frames natively with OpenCV before converting color spaces or Pygame surfaces. Use `pygame.image.frombuffer` instead of `surfarray` where possible to minimize overhead.

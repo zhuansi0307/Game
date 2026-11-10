@@ -194,7 +194,7 @@ class ChooserScene(BaseScene):
             color = (220, 198, 170) if is_hover else COLOR_CHAMPAGNE
             pygame.draw.rect(screen, color, btn["rect"], border_radius=8)
             pygame.draw.rect(screen, (80, 60, 40), btn["rect"], 2, border_radius=8)
-            
+
             text_surf = self.fonts["button"].render(btn["text"], True, (20, 15, 10))
             text_rect = text_surf.get_rect(center=btn["rect"].center)
             screen.blit(text_surf, text_rect)
