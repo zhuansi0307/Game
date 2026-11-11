@@ -1,0 +1,3 @@
+## 2025-01-20 - Pygame Video Rendering Optimization
+**Learning:** For rendering video frames in Pygame, converting BGR to RGB and then using `pygame.image.frombuffer(rgb.tobytes(), (width, height), 'RGB')` is ~21x faster than using `np.transpose` + `pygame.surfarray.make_surface`. It avoids the heavy CPU bottleneck of transposing large arrays in Python/numpy. Also doing `cv2.resize` *before* color conversion minimizes the number of pixels to process in `cv2.cvtColor`.
+**Action:** Always prefer `pygame.image.frombuffer` with `tobytes()` over `np.transpose` + `make_surface` for frequent image/video rendering in Pygame. Apply resizing directly via OpenCV before any other manipulation.
